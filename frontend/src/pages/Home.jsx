@@ -1,0 +1,1 @@
+/* This is the page 1 for our web app, contains Start/End form + search button */
