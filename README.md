@@ -1,1 +1,3 @@
 # ICSSCWebJam2025
+
+ICS SC WebJam 2025 Project
