@@ -1,104 +1,166 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template.loader import render_to_string, get_template
 from django.shortcuts import render
+from django.conf import settings
+from django.core.exceptions import ValidationError
 
-from django.http import JsonResponse
 import json
-
+import logging
 import yaml
 import googlemaps
-from datetime import datetime
-
 import requests
-
+from datetime import datetime
+from typing import Tuple, Dict, Any, Optional
 from geographiclib.geodesic import Geodesic
 from googlemaps.convert import decode_polyline
 
-from pathlib import Path
+logger = logging.getLogger(__name__)
 
-# Read API key from the same package folder (backend/src/api_key.txt)
-key_path = Path(__file__).resolve().parent / "api_key.txt"
-with open(key_path, 'r') as api_key_file:
-    API_KEY = api_key_file.readline().strip()
+# Constants
+SEARCH_RADIUS_METERS = 5000
+PLACES_PER_COORDINATE = 3
+POLYLINE_STEP = 27  # step size for reducing route points
+DEFAULT_PLACE_TYPE = 'restaurant'
 
-#get the gps coordinates from the address
-def get_coordinates_from_address(address):
-    base_url = "https://maps.googleapis.com/maps/api/geocode/json"
-    params = {
-        "address": address,
-        "key": API_KEY
-    }
+# Initialize Google Maps client
+try:
+    gmaps_client = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY)
+except Exception as e:
+    logger.error(f"Failed to initialize Google Maps client: {e}")
+    gmaps_client = None
+
+def get_coordinates_from_address(address: str) -> Optional[Tuple[float, float]]:
+    """
+    Get GPS coordinates from an address using Google Geocoding API.
+    
+    Args:
+        address: The address to geocode
+        
+    Returns:
+        Tuple of (latitude, longitude) if successful, None otherwise
+    """
+    if not gmaps_client:
+        logger.error("Google Maps client not initialized")
+        return None
 
     try:
-        response = requests.get(base_url, params=params)
-        data = response.json()
+        result = gmaps_client.geocode(address)
+        if not result:
+            logger.warning(f"No results found for address: {address}")
+            return None
+            
+        location = result[0]['geometry']['location']
+        return location['lat'], location['lng']
 
-        if data["status"] == "OK":
-            location = data["results"][0]["geometry"]["location"]
-            latitude = location["lat"]
-            longitude = location["lng"]
-            return latitude, longitude
-        else:
-            print("sad :(")
-    except:
-        print(f"Sad :(")
+    except Exception as e:
+        logger.error(f"Error geocoding address {address}: {e}")
+        return None
 
-#this renders the index page, if you wanna add a new page, add a new function
-#and update the urls.py file
-def index(request):
-    #get the map
-    displayed_map = googlemaps.Client(key=API_KEY)
+def get_route_data(start: str, destination: str) -> Optional[Dict[str, Any]]:
+    """
+    Get route data including polyline and center coordinates.
     
-    #hard coded the destination for now, we can fetch them from the html template later
+    Args:
+        start: Starting address
+        destination: Destination address
+    
+    Returns:
+        Dictionary containing route data or None if error occurs
+    """
+    if not gmaps_client:
+        return None
+
+    try:
+        directions = gmaps_client.directions(start, destination, mode="driving")
+        if not directions:
+            logger.warning(f"No route found between {start} and {destination}")
+            return None
+
+        route_polyline = directions[0]['overview_polyline']['points']
+        decoded_poly = decode_polyline(route_polyline)
+
+        # Calculate center point (could be improved to find actual center)
+        center_coord = decoded_poly[len(decoded_poly)//2]
+
+        return {
+            'polyline': route_polyline,
+            'decoded_points': decoded_poly,
+            'center': center_coord
+        }
+    except Exception as e:
+        logger.error(f"Error getting route data: {e}")
+        return None
+
+def get_places_along_route(decoded_points: list) -> Dict[int, list]:
+    """
+    Find places of interest along the route.
+    
+    Args:
+        decoded_points: List of decoded polyline points
+    
+    Returns:
+        Dictionary mapping point indices to place information
+    """
+    places = {}
+
+    if not gmaps_client:
+        return places
+
+    for i in range(0, len(decoded_points), POLYLINE_STEP):
+        point = decoded_points[i]
+        try:
+            nearby = gmaps_client.places_nearby(
+                location=(point['lat'], point['lng']),
+                radius=SEARCH_RADIUS_METERS,
+                type=DEFAULT_PLACE_TYPE
+            )
+
+            if not nearby.get('results'):
+                continue
+
+            for place in nearby['results'][:PLACES_PER_COORDINATE]:
+                place_details = gmaps_client.place(place['place_id'])
+                if place_details.get('result', {}).get('formatted_address'):
+                    coords = get_coordinates_from_address(place_details['result']['formatted_address'])
+                    if coords:
+                        places[i] = [coords[0], coords[1], place['name']]
+                        break
+
+        except Exception as e:
+            logger.error(f"Error finding places near point {i}: {e}")
+            continue
+
+    return places
+
+def index(request):
+    """
+    Main view for rendering the route map with nearby places.
+    """
+    # TODO: Get these from form data or URL parameters
     start = "San Diego, CA"
     destination = "Irvine, CA"
 
-    #get the directions
-    directions_result = displayed_map.directions(start, destination, mode="driving")
+    # Get route information
+    route_data = get_route_data(start, destination)
+    if not route_data:
+        return HttpResponse("Unable to calculate route", status=500)
 
-    #get the polyline from the map
-    route_polyline = directions_result[0]['overview_polyline']['points']
-        
-    print(len(decode_polyline(route_polyline)))
-
-    #convert the polyline to a list of dicts of GPS coordinates
-    decoded_poly = decode_polyline(route_polyline)
-
-    center_coord = decoded_poly[len(decoded_poly)//2] #FIX THIS!!! idk how to get the center of the graph (i just got the center of the polyline)
-
+    # Get coordinates for start and destination
     start_coords = get_coordinates_from_address(start)
     dest_coords = get_coordinates_from_address(destination)
+    if not start_coords or not dest_coords:
+        return HttpResponse("Unable to geocode addresses", status=500)
 
-    all_coords = {}
+    # Find places along the route
+    places = get_places_along_route(route_data['decoded_points'])
 
-    #gives a lot of results, stepping by 27 reduces it significantly
-    for i in range(0, len(decoded_poly), 27):
-        each_coord = decoded_poly[i]
-        radius_meters = 5000  #5km
-        place_type = 'restaurant' #need to update this
-
-        places_result = displayed_map.places_nearby(location=(each_coord['lat'], each_coord['lng']), radius=radius_meters, type=place_type)
-
-        #only take the first three landmarks of the gps coordinate
-        for j in range(0, min(3, len(places_result['results']))):
-            place = places_result['results'][j]
-            place_details = displayed_map.place(place_id=place['place_id'])
-            try:
-                #should probably do this in a neater way
-                all_coords[i] = [get_coordinates_from_address(place_details['result']['formatted_address'])[0],
-                                   get_coordinates_from_address(place_details['result']['formatted_address'])[1],
-                                   place['name']]
-            except:
-                print("sad:(")
-
-    #these are the variables that are being acces in the html file
     context = {
-        'google_api_key': API_KEY,
-        'route_polyline': route_polyline,
-        'center_lat': center_coord['lat'],
-        'center_long': center_coord['lng'],
+        'google_api_key': settings.GOOGLE_MAPS_API_KEY,
+        'route_polyline': route_data['polyline'],
+        'center_lat': route_data['center']['lat'],
+        'center_long': route_data['center']['lng'],
         'destination': dest_coords,
-        'all_coords': all_coords,
+        'all_coords': places,
     }
 
     return render(request, 'index.html', context)

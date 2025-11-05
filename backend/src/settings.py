@@ -15,6 +15,10 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# read API key
+key_path = BASE_DIR / "src/api_key.txt"
+with open(key_path, 'r') as api_key_file:
+    GOOGLE_MAPS_API_KEY = api_key_file.readline().strip()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
