@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <title>My Map</title>
+        <style>
+            #map {
+                height: 600vh;
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <div id="root"></div>
+
+
+        <script type="module" src="/src/pages/main.jsx"></script>
+
+        {% comment %} //idk why this is done like this :( got this answer from gemini search thing {% endcomment %}
+        {{ all_coords|json_script:"all_coords_data" }}
+
+        <script>
+
+            function initMap() {
+                //TODO: I haven't been able to figure out how to get the map to center correctly
+                let center_lat = parseFloat("{{center_lat}}");
+                let center_long = parseFloat("{{center_long}}");
+
+                const map = new google.maps.Map(document.getElementById("map"), {
+                    center: { lat: center_lat, lng: center_long }, 
+                    zoom: 12,
+                });
+
+                //escapejs - since there are many special characters in the polyline, this ensures
+                //that it doesn't screw up the text
+                const polyline_str = "{{ route_polyline|escapejs }}";
+                const path = google.maps.geometry.encoding.decodePath(polyline_str);
+                const routePolyline = new google.maps.Polyline({
+                    path: path,
+                    geodesic: true,
+                    strokeColor: '#FF0000', 
+                    strokeOpacity: 1.0,
+                    strokeWeight: 4
+                });
+
+                //JSON.parse to get the dictionary in correctly; "all_coords_data" is the variable defined on line 16
+                const all_coords_titles = JSON.parse(document.getElementById('all_coords_data').textContent);
+
+                //generates all the markers and displays them on the map
+                //hover over the dark red circle on each marker to show the name of the restaurant
+                //TODO: need to display the names in a different way, the hover is very inconvinient
+                const all_markers = [];
+                for (const each_coord in all_coords_titles) {
+                    const marker = new google.maps.Marker({
+                        position: {lat: all_coords_titles[each_coord][0], lng: all_coords_titles[each_coord][1]},
+                        map: map,
+                        title: all_coords_titles[each_coord][2],
+                    });
+                }
+                routePolyline.setMap(map);
+            }
+        </script>
+        {% comment %} imports all the google maps libraries to use {% endcomment %}
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&libraries=geometry"></script>
+    </body>
+    </html>

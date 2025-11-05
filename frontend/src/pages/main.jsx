@@ -8,6 +8,6 @@ This code renders our project so it can be viewed in a browser.
 */
 ReactDOM.createRoot(document.getElementById("root")).render(
 	<React.StrictMode>
-		<App />
+		<Results />
 	</React.StrictMode>
 );
