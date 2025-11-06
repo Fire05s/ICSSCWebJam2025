@@ -279,7 +279,7 @@ def index(request):
 
     # Find places along the route
     places = get_places_along_route(route_data['decoded_points'])
-    print(places)
+    # print(places)
 
     # If this request comes from React (expects JSON)
     if request.headers.get("Accept") == "application/json" or request.GET.get("format") == "json":
