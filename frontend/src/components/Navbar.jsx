@@ -4,16 +4,15 @@ import { Link } from "react-router-dom";
 export default function Navbar() {
     return (
         <nav style={{
-            backgroundColor: "#222",
+            backgroundColor: "#72a8ad",
             color: "white",
-            padding: "10px 20px",
+            padding: "3px 10px",
             display: "flex",
             justifyContent: "space-between"
         }}>
-            <h3>Journey Map</h3>
+            <h2>Journey Map</h2>
             <div>
-                <Link to="/" style={{ color: "white", textDecoration: "none", marginRight: "15px" }}>Home</Link>
-                <Link to="/result" style={{ color: "white", textDecoration: "none" }}>Result</Link>
+                <Link to="/" style={{ color: "white", textDecoration: "none", marginRight: "15px"}}>Home</Link>
             </div>
         </nav>
     );
