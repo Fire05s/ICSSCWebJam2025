@@ -1,92 +1,144 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline, useLoadScript } from "@react-google-maps/api";
+import polyline from "@mapbox/polyline";
 import "./MapView.css";
 
 const containerStyle = { width: "100%", height: "100%" };
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+// Initial Default Center (used as a fallback if geolocation fails)
+const FALLBACK_CENTER = { lat: 33.6441, lng: -117.8452 }; // E.g., Irvine, CA
+
+// Helper: Validate LatLng
+const isValidLatLng = (coord) =>
+    coord &&
+    typeof coord.lat === "number" &&
+    typeof coord.lng === "number" &&
+    isFinite(coord.lat) &&
+    isFinite(coord.lng);
+
+// Helper function to safely process coordinates
+const processCoords = (coords) => {
+    if (!coords) return null;
+
+    // ... (Coordinate processing logic remains the same)
+    if (Array.isArray(coords) && coords.length === 2) {
+        return { lat: Number(coords[0]), lng: Number(coords[1]) };
+    }
+    else if (coords.lat && typeof coords.lat === 'string') {
+        return { lat: Number(coords.lat), lng: Number(coords.lng) };
+    }
+    else if (isValidLatLng(coords)) {
+        return coords;
+    }
+    return null;
+};
 
 export default function MapView({ start, end, setSelectedPOI }) {
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     });
 
-    const [center, setCenter] = useState({ lat: 33.6441, lng: -117.8452 });
-    const [userLocation, setUserLocation] = useState(null);
+    const mapRef = useRef(null);
+    const hasFitBounds = useRef(false);
+
+    // 🌟 NEW STATE: To store the user's fetched location
+    const [defaultCenter, setDefaultCenter] = useState(FALLBACK_CENTER);
+    const [route, setRoute] = useState([]);
     const [POIs, setPOIs] = useState([]);
-    const mapRef = useRef(null); // Ref for the Google Map instance
+    const [startCoords, setStartCoords] = useState(null);
+    const [destCoords, setDestCoords] = useState(null);
 
     const onMapLoad = useCallback((map) => {
         mapRef.current = map;
     }, []);
 
-    // Locate user
-    const locateUser = useCallback(() => {
+    // 📍 EFFECT 1: Fetch User Location on Mount
+    useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const userCoords = {
+                    setDefaultCenter({
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
-                    };
-                    setCenter(userCoords);
-                    setUserLocation(userCoords);
-                    // Smooth pan to user's location
-                    if (mapRef.current) {
-                        mapRef.current.panTo(userCoords);
-                        mapRef.current.setZoom(14);
-                    }
+                    });
                 },
+                // On error (user denies, timeout, etc.), we fall back to FALLBACK_CENTER
                 (error) => {
-                    console.error("Error getting location:", error);
-                    alert("Unable to fetch your location. Please allow access.");
-                }
+                    console.warn("Geolocation Error:", error.message);
+                    // State remains FALLBACK_CENTER
+                },
+                // Options
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
-        } else {
-            alert("Geolocation not supported by your browser.");
         }
-    }, []);
+    }, []); // Empty dependency array means this runs only once on mount
 
+    // 🗺️ EFFECT 2: Fetch route and POIs
     useEffect(() => {
-        // Auto-locate once on mount
-        locateUser();
-    }, [locateUser]);
+        if (!start || !end) return;
 
-    useEffect(() => {
-        // Fetch route + places from backend
-        if (start && end) {
-            fetch(`http://127.0.0.1:8000/?start=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&format=json`)
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.route_polyline) {
-                        setCenter(data.center);
-                        const placesArray = Object.values(data.places).map(([lat, lng, name, color]) => ({
-                            lat, lng, name, color
-                        }));
-                        setPOIs(placesArray);
-                    } else {
-                        console.error(data.error);
-                    }
-                })
-                .catch(console.error);
-        }
+        hasFitBounds.current = false;
+
+        fetch(`${BACKEND_URL}?start=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&format=json`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (!data.route_polyline) return;
+
+                const decodedRoute = polyline.decode(data.route_polyline).map(([lat, lng]) => ({ lat, lng }));
+                const placesArray = Object.values(data.places || {}).map(([lat, lng, name, color]) => ({ lat, lng, name, color }));
+                const finalStart = processCoords(data.start_coords);
+                const finalDest = processCoords(data.dest_coords);
+
+                // Batch State Updates
+                setRoute(decodedRoute);
+                setPOIs(placesArray);
+                setStartCoords(finalStart);
+                setDestCoords(finalDest);
+            })
+            .catch(console.error);
     }, [start, end]);
 
+    // 🧭 EFFECT 3: Fit bounds only once when route data is ready
+    useEffect(() => {
+        if (mapRef.current && isValidLatLng(startCoords) && isValidLatLng(destCoords) && !hasFitBounds.current) {
+
+            const bounds = new window.google.maps.LatLngBounds();
+            bounds.extend(startCoords);
+            bounds.extend(destCoords);
+
+            POIs.forEach((poi) => {
+                if (isValidLatLng(poi)) bounds.extend(poi);
+            });
+
+            mapRef.current.fitBounds(bounds);
+            hasFitBounds.current = true;
+        }
+    }, [startCoords, destCoords, POIs]);
+
+    // Helper to check if the center is the fallback (i.e., user location failed to load)
+    const isUserLocationLoaded = defaultCenter.lat !== FALLBACK_CENTER.lat || defaultCenter.lng !== FALLBACK_CENTER.lng;
+    
     if (!isLoaded) return <div>Loading map...</div>;
 
     return (
         <div className="map-wrapper">
             <GoogleMap
                 mapContainerStyle={containerStyle}
-                center={center}
+                // 🚀 Set initial center to the user's location state
+                center={defaultCenter}
                 zoom={13}
+                onLoad={onMapLoad}
                 onClick={() => setSelectedPOI(null)}
             >
-                {userLocation && (
+                {/* 🌟 FIX: Use defaultCenter for the position, and only render if not the fallback */}
+                {isUserLocationLoaded && (
                     <Marker
-                        position={userLocation}
+                        position={defaultCenter} // Corrected variable
                         icon={{
                             path: window.google.maps.SymbolPath.CIRCLE,
                             scale: 8,
-                            fillColor: "#4285F4",
+                            fillColor: "#4285F4", // Google Blue
                             fillOpacity: 1,
                             strokeWeight: 2,
                             strokeColor: "white",
@@ -94,16 +146,22 @@ export default function MapView({ start, end, setSelectedPOI }) {
                     />
                 )}
 
-                {POIs.map((poi, index) => (
+                {/* Route */}
+                {route.length > 0 && (
+                    <Polyline
+                        path={route}
+                        options={{ strokeColor: "#4285F4", strokeOpacity: 0.8, strokeWeight: 5 }}
+                    />
+                )}
+
+                {/* POIs */}
+                {POIs.map((poi, idx) => (
                     <Marker
-                        key={index}
+                        key={idx}
                         position={{ lat: poi.lat, lng: poi.lng }}
-                        onClick={(e) => {
-                            e.domEvent.stopPropagation();
-                            setSelectedPOI(poi);
-                        }}
+                        onClick={(e) => { e.domEvent.stopPropagation(); setSelectedPOI(poi); }}
                         icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
+                            path: window.google.maps.SymbolPath.CIRCLE,
                             scale: 8,
                             fillColor: poi.color?.background || "#4285F4",
                             fillOpacity: 1,
@@ -113,10 +171,6 @@ export default function MapView({ start, end, setSelectedPOI }) {
                     />
                 ))}
             </GoogleMap>
-
-            <button className="locate-btn" onClick={locateUser} title="Center map on my location">
-                📍
-            </button>
         </div>
     );
 }

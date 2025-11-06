@@ -220,6 +220,8 @@ def index(request):
             "center": route_data["center"],
             "places": places,
             "destination": dest_coords,
+            "start_coords": start_coords, # return start and end coords for frontend zoom in/out
+            "dest_coords": dest_coords, 
         })
 
     # Otherwise, render the HTML template
