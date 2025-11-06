@@ -29,7 +29,7 @@ FOOD_AND_DRINK = "Food and Drink"
 LODGING = "Lodging"
 ENTERTAINMENT = "Entertainment and Recreation"
 SHOPPING = "Shopping"
-
+ 
 DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
 
 #give the user an option to customize their search from the parameters:
@@ -42,13 +42,14 @@ ALL_FILTER_OPTIONS = {'grocery_store': SHOPPING, 'clothing_store': SHOPPING, 'st
                 'amusement_park': ENTERTAINMENT, 'movie_theater': ENTERTAINMENT, 'wildlife_park': ENTERTAINMENT, 'zoo': ENTERTAINMENT,
                 'hotel': LODGING, 'inn': LODGING, 
                 'restaurant': FOOD_AND_DRINK, 'vegan_restaurant': FOOD_AND_DRINK, 'vegetarian_restaurant': FOOD_AND_DRINK}
-
+ 
 # Initialize Google Maps client
 try:
     gmaps_client = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY)
 except Exception as e:
     logger.error(f"Failed to initialize Google Maps client: {e}")
     gmaps_client = None
+
 
 def get_coordinates_from_address(address: str) -> Optional[Tuple[float, float]]:
     """
@@ -155,7 +156,7 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
     for i in range(0, len(decoded_points), POLYLINE_STEP):
         point = decoded_points[i]
         try:
-            #loop through each filter, I don't think there is a way to put multiple filters into places_nearby()
+            # loop through each filter, I don't think there is a way to put multiple filters into places_nearby()
             for each_filter in filters_selected:
                 nearby = gmaps_client.places_nearby(
                     location=(point['lat'], point['lng']),
@@ -188,8 +189,58 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
                         except (TypeError, ValueError):
                             user_ratings_total = None
 
+                        # get a photo URL if available (use Google Places Photo endpoint)
+                        photo_url = None
+                        photos = place_details.get('result', {}).get('photos') or place.get('photos')
+                        if photos and isinstance(photos, list) and len(photos) > 0:
+                            photo_ref = photos[0].get('photo_reference')
+                            if photo_ref and settings.GOOGLE_MAPS_API_KEY:
+                                photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={photo_ref}&key={settings.GOOGLE_MAPS_API_KEY}"
+                                # this API query should only activate if this image is inspected
+
+                        # get current weather for the place coordinates using Open-Meteo (no API key required)
+                        weather = None
+                        try:
+                            lat, lng = coords[0], coords[1]
+                            weather_resp = requests.get(
+                                f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}"
+                                f"&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m"
+                                f"&timezone=America%2FLos_Angeles",
+                                timeout=5
+                            )
+                            if weather_resp.status_code == 200:
+                                weather_json = weather_resp.json()
+                                current = weather_json.get('current')
+                                if current:
+                                    weather = {
+                                        'temperature_c': current.get('temperature_2m'),
+                                        'feels_like': current.get('apparent_temperature'),
+                                        'humidity': current.get('relative_humidity_2m'),
+                                        'precipitation': current.get('precipitation'),
+                                        'weather_code': current.get('weather_code'),
+                                        'wind_speed': current.get('wind_speed_10m'),
+                                        'time': current.get('time')
+                                    }
+                                    '''
+                                    weather code:
+                                        0: Clear sky
+                                        1: Mainly clear
+                                        2: Partly cloudy
+                                        3: Overcast
+                                        45/48: Foggy
+                                        51-55: Drizzle
+                                        61-65: Rain
+                                        71-75: Snow
+                                        80-82: Rain showers
+                                        95+: Thunderstorms
+                                    '''
+                        except Exception as e:
+                            logger.debug(f"Weather fetch failed for {place.get('name')}: {e}")
+
                         if coords:
-                            places[dict_index] = [coords[0], coords[1], place['name'], place_color, rating, user_ratings_total]
+                            # Append rating, user_ratings_total, photo_url and weather to the place entry
+                            places[dict_index] = [coords[0], coords[1], place['name'], place_color,
+                                                rating, user_ratings_total, photo_url, weather]
                             dict_index += 1
                             break
 
@@ -228,6 +279,7 @@ def index(request):
 
     # Find places along the route
     places = get_places_along_route(route_data['decoded_points'])
+    print(places)
 
     # If this request comes from React (expects JSON)
     if request.headers.get("Accept") == "application/json" or request.GET.get("format") == "json":
