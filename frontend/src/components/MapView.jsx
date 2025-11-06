@@ -11,10 +11,10 @@ const FALLBACK_CENTER = { lat: 33.6441, lng: -117.8452 }; // E.g., Irvine, CA
 
 // Define dot color here
 const color = {
-    "Food & Drink": "#f54263",
-    "Lodging": "#253bfa",
-    "Entertainment": "#f3fa25",
-    "Shopping": "#1b7a28",
+    "Food & Drink": "#FF6B6B",
+    "Lodging": "#4ECDC4",
+    "Entertainment": "#FFD93D",
+    "Shopping": "#6A4C93",
 };
 
 // Helper: Validate LatLng

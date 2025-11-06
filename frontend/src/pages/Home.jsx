@@ -10,6 +10,11 @@ export default function Home() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Validate start and end
+        if (!formData.start.trim() || !formData.end.trim()) {
+            alert("Please fill out both start and end locations.");
+            return; // Stop navigation
+        }
         navigate("/result", { state: formData });
     };
 

@@ -33,10 +33,10 @@ SHOPPING = "Shopping"
 DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
 
 #give the user an option to customize their search from the parameters:
-FILTER_COLORS = {FOOD_AND_DRINK:{'background': '#f54263', 'border': '#000000', 'glyph': '#570010'}, 
-                LODGING: {'background': '#253bfa', 'border': '#000000', 'glyph': '#1b7a28'}, 
-                ENTERTAINMENT: {'background': '#f3fa25', 'border': '#000000', 'glyph': '#858a00'}, 
-                SHOPPING: {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}}
+FILTER_COLORS = {FOOD_AND_DRINK:{'background': '#FF6B6B', 'border': '#000000', 'glyph': '#570010'}, 
+                LODGING: {'background': '#4ECDC4', 'border': '#000000', 'glyph': '#1b7a28'}, 
+                ENTERTAINMENT: {'background': '#FFD93D', 'border': '#000000', 'glyph': '#858a00'}, 
+                SHOPPING: {'background': '#6A4C93', 'border': '#000000', 'glyph': '#013d09'}}
             
 ALL_FILTER_OPTIONS = {'grocery_store': SHOPPING, 'clothing_store': SHOPPING, 'store': SHOPPING,
                 'amusement_park': ENTERTAINMENT, 'movie_theater': ENTERTAINMENT, 'wildlife_park': ENTERTAINMENT, 'zoo': ENTERTAINMENT,
