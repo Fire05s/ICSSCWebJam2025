@@ -9,6 +9,14 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 // Initial Default Center (used as a fallback if geolocation fails)
 const FALLBACK_CENTER = { lat: 33.6441, lng: -117.8452 }; // E.g., Irvine, CA
 
+// Define dot color here
+const color = {
+    "Food & Drink": "#f54263",
+    "Lodging": "#253bfa",
+    "Entertainment": "#f3fa25",
+    "Shopping": "#1b7a28",
+};
+
 // Helper: Validate LatLng
 const isValidLatLng = (coord) =>
     coord &&
@@ -124,6 +132,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
     return (
         <div className="map-wrapper">
             <GoogleMap
+                mapContainerClassName="map-container"
                 mapContainerStyle={containerStyle}
                 // Set initial center to the user's location state
                 center={defaultCenter}
@@ -171,6 +180,16 @@ export default function MapView({ start, end, setSelectedPOI }) {
                     />
                 ))}
             </GoogleMap>
+            
+            {/* Add dot color box here */}
+            <div className="dot-color">
+                {Object.entries(color).map(([label, color]) => (
+                    <div key={label} className="color-item">
+                        <span className="color-dot" style={{ backgroundColor: color }}></span>
+                        {label}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
