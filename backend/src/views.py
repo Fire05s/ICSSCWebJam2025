@@ -29,19 +29,132 @@ FOOD_AND_DRINK = "Food and Drink"
 LODGING = "Lodging"
 ENTERTAINMENT = "Entertainment and Recreation"
 SHOPPING = "Shopping"
+SERVICES = "Services"
+TRANSPORTATION = "Transportation"
+CULTURAL = "Cultural & Public Places"
+HEALTH = "Healthcare"
  
 DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
 
 #give the user an option to customize their search from the parameters:
-FILTER_COLORS = {FOOD_AND_DRINK:{'background': '#FF6B6B', 'border': '#000000', 'glyph': '#570010'}, 
-                LODGING: {'background': '#4ECDC4', 'border': '#000000', 'glyph': '#1b7a28'}, 
-                ENTERTAINMENT: {'background': '#FFD93D', 'border': '#000000', 'glyph': '#858a00'}, 
-                SHOPPING: {'background': '#6A4C93', 'border': '#000000', 'glyph': '#013d09'}}
+FILTER_COLORS = {
+    FOOD_AND_DRINK: {'background': '#FF6B6B', 'border': '#000000', 'glyph': '#570010'}, 
+    LODGING: {'background': '#4ECDC4', 'border': '#000000', 'glyph': '#1b7a28'}, 
+    ENTERTAINMENT: {'background': '#FFD93D', 'border': '#000000', 'glyph': '#858a00'}, 
+    SHOPPING: {'background': '#6A4C93', 'border': '#000000', 'glyph': '#013d09'},
+    SERVICES: {'background': '#95A5A6', 'border': '#000000', 'glyph': '#2C3E50'},
+    TRANSPORTATION: {'background': '#3498DB', 'border': '#000000', 'glyph': '#2980B9'},
+    CULTURAL: {'background': '#E67E22', 'border': '#000000', 'glyph': '#D35400'},
+    HEALTH: {'background': '#E74C3C', 'border': '#000000', 'glyph': '#C0392B'}
+}
             
-ALL_FILTER_OPTIONS = {'grocery_store': SHOPPING, 'clothing_store': SHOPPING, 'store': SHOPPING,
-                'amusement_park': ENTERTAINMENT, 'movie_theater': ENTERTAINMENT, 'wildlife_park': ENTERTAINMENT, 'zoo': ENTERTAINMENT,
-                'hotel': LODGING, 'inn': LODGING, 
-                'restaurant': FOOD_AND_DRINK, 'vegan_restaurant': FOOD_AND_DRINK, 'vegetarian_restaurant': FOOD_AND_DRINK}
+ALL_FILTER_OPTIONS = {
+    # Food and Drink places
+    'restaurant': FOOD_AND_DRINK,
+    'bar': FOOD_AND_DRINK,
+    'cafe': FOOD_AND_DRINK,
+    'bakery': FOOD_AND_DRINK,
+    'meal_takeaway': FOOD_AND_DRINK,
+    'meal_delivery': FOOD_AND_DRINK,
+    'supermarket': FOOD_AND_DRINK,
+    'liquor_store': FOOD_AND_DRINK,
+    
+    # Shopping places
+    'shopping_mall': SHOPPING,
+    'grocery_store': SHOPPING,
+    'clothing_store': SHOPPING,
+    'department_store': SHOPPING,
+    'convenience_store': SHOPPING,
+    'electronics_store': SHOPPING,
+    'furniture_store': SHOPPING,
+    'hardware_store': SHOPPING,
+    'book_store': SHOPPING,
+    'jewelry_store': SHOPPING,
+    'store': SHOPPING,
+    'florist': SHOPPING,
+    'bicycle_store': SHOPPING,
+    'home_goods_store': SHOPPING,
+    'shoe_store': SHOPPING,
+    'pet_store': SHOPPING,
+
+    # Entertainment and Recreation places
+    'amusement_park': ENTERTAINMENT,
+    'aquarium': ENTERTAINMENT,
+    'art_gallery': ENTERTAINMENT,
+    'bowling_alley': ENTERTAINMENT,
+    'casino': ENTERTAINMENT,
+    'movie_theater': ENTERTAINMENT,
+    'museum': ENTERTAINMENT,
+    'night_club': ENTERTAINMENT,
+    'park': ENTERTAINMENT,
+    'stadium': ENTERTAINMENT,
+    'zoo': ENTERTAINMENT,
+    'gym': ENTERTAINMENT,
+    'tourist_attraction': ENTERTAINMENT,
+    'spa': ENTERTAINMENT,
+    
+    # Lodging places
+    'hotel': LODGING,
+    'lodging': LODGING,
+    'rv_park': LODGING,
+    'campground': LODGING,
+
+    # Services
+    'atm': SERVICES,
+    'bank': SERVICES,
+    'car_rental': SERVICES,
+    'car_repair': SERVICES,
+    'car_wash': SERVICES,
+    'gas_station': SERVICES,
+    'laundry': SERVICES,
+    'post_office': SERVICES,
+    'real_estate_agency': SERVICES,
+    'hair_care': SERVICES,
+    'beauty_salon': SERVICES,
+    'insurance_agency': SERVICES,
+    'locksmith': SERVICES,
+    'moving_company': SERVICES,
+    'storage': SERVICES,
+    'lawyer': SERVICES,
+    'painter': SERVICES,
+    'plumber': SERVICES,
+    'roofing_contractor': SERVICES,
+
+    # Transportation
+    'airport': TRANSPORTATION,
+    'bus_station': TRANSPORTATION,
+    'train_station': TRANSPORTATION,
+    'subway_station': TRANSPORTATION,
+    'taxi_stand': TRANSPORTATION,
+    'parking': TRANSPORTATION,
+    'light_rail_station': TRANSPORTATION,
+    'transit_station': TRANSPORTATION,
+
+    # Cultural & Public Places
+    'church': CULTURAL,
+    'mosque': CULTURAL,
+    'hindu_temple': CULTURAL,
+    'synagogue': CULTURAL,
+    'place_of_worship': CULTURAL,
+    'library': CULTURAL,
+    'city_hall': CULTURAL,
+    'courthouse': CULTURAL,
+    'embassy': CULTURAL,
+    'fire_station': CULTURAL,
+    'police': CULTURAL,
+    'school': CULTURAL,
+    'university': CULTURAL,
+    'cemetery': CULTURAL,
+
+    # Healthcare
+    'hospital': HEALTH,
+    'pharmacy': HEALTH,
+    'dentist': HEALTH,
+    'doctor': HEALTH,
+    'physiotherapist': HEALTH,
+    'veterinary_care': HEALTH,
+    'medical_clinic': HEALTH
+}
  
 # Initialize Google Maps client
 try:
