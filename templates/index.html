@@ -29,6 +29,7 @@
                 const map = new google.maps.Map(document.getElementById("map"), {
                     center: { lat: center_lat, lng: center_long }, 
                     zoom: 12,
+                    mapId: 'DEMO_MAP_ID',
                 });
 
                 //escapejs - since there are many special characters in the polyline, this ensures
@@ -49,18 +50,25 @@
                 //generates all the markers and displays them on the map
                 //hover over the dark red circle on each marker to show the name of the restaurant
                 //TODO: need to display the names in a different way, the hover is very inconvinient
-                const all_markers = [];
                 for (const each_coord in all_coords_titles) {
-                    const marker = new google.maps.Marker({
+                    const pin = new google.maps.marker.PinElement({
+                        scale: 1,
+                        background: all_coords_titles[each_coord][3]['background'],
+                        borderColor: all_coords_titles[each_coord][3]['border'],
+                        glyphColor: all_coords_titles[each_coord][3]['glyph'],
+                    });
+                    // Create a marker and apply the element.
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
                         position: {lat: all_coords_titles[each_coord][0], lng: all_coords_titles[each_coord][1]},
                         map: map,
                         title: all_coords_titles[each_coord][2],
+                        content: pin.element,
                     });
                 }
                 routePolyline.setMap(map);
             }
         </script>
         {% comment %} imports all the google maps libraries to use {% endcomment %}
-        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&libraries=geometry"></script>
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&libraries=geometry,marker"></script>
     </body>
     </html>

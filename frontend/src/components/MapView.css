@@ -1,0 +1,85 @@
+.map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 90vh;
+}
+
+.map-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.dot-color {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: var(--modal-bg);
+    color: var(--modal-text);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.color-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+/* Map loading */
+.map-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 6px solid #ccc;
+    border-top-color: #4285f4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Light mode */
+@media (prefers-color-scheme: light) {
+    :root {
+        --modal-bg: #ffffff;
+        --modal-text: #213547;
+        --button-bg: #f9f9f9;
+        --link-hover: #747bff;
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --modal-bg: #1a1a1a;
+        --modal-text: #ffffff;
+        --button-bg: #2c2c2c;
+        --link-hover: #4a90e2;
+    }
+}

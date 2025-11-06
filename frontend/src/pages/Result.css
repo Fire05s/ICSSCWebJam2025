@@ -10,8 +10,8 @@
     /* left panel takes 25% width */
     min-width: 300px;
     /* prevent collapsing */
-    background-color: #355457;
-    color: white;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     padding: 1rem;
     overflow-y: auto;
 }
@@ -28,4 +28,24 @@
     left: 0;
     right: 0;
     bottom: 0;
+}
+
+/* Light mode styles */
+@media (prefers-color-scheme: light) {
+    :root {
+        --text-color: #213547;
+        --bg-color: #ffffff;
+        --button-bg: #f9f9f9;
+        --link-hover: #747bff;
+    }
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #ffffff;
+        --bg-color: #1a1a1a;
+        --button-bg: #2c2c2c;
+        --link-hover: #4a90e2;
+    }
 }

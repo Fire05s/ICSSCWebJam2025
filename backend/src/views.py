@@ -13,21 +13,156 @@ from datetime import datetime
 from typing import Tuple, Dict, Any, Optional
 from geographiclib.geodesic import Geodesic
 from googlemaps.convert import decode_polyline
+from django.views.decorators.csrf import csrf_exempt
+
+from collections import namedtuple
 
 logger = logging.getLogger(__name__)
 
 # Constants
 SEARCH_RADIUS_METERS = 5000
 PLACES_PER_COORDINATE = 3
-POLYLINE_STEP = 27  # step size for reducing route points
+POLYLINE_STEP = 23  # step size for reducing route points
 DEFAULT_PLACE_TYPE = 'restaurant'
 
+FOOD_AND_DRINK = "Food and Drink"
+LODGING = "Lodging"
+ENTERTAINMENT = "Entertainment and Recreation"
+SHOPPING = "Shopping"
+SERVICES = "Services"
+TRANSPORTATION = "Transportation"
+CULTURAL = "Cultural & Public Places"
+HEALTH = "Healthcare"
+ 
+DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
+
+#give the user an option to customize their search from the parameters:
+FILTER_COLORS = {
+    FOOD_AND_DRINK: {'background': '#FF6B6B', 'border': '#000000', 'glyph': '#570010'}, 
+    LODGING: {'background': '#4ECDC4', 'border': '#000000', 'glyph': '#1b7a28'}, 
+    ENTERTAINMENT: {'background': '#FFD93D', 'border': '#000000', 'glyph': '#858a00'}, 
+    SHOPPING: {'background': '#6A4C93', 'border': '#000000', 'glyph': '#013d09'},
+    SERVICES: {'background': '#95A5A6', 'border': '#000000', 'glyph': '#2C3E50'},
+    TRANSPORTATION: {'background': '#3498DB', 'border': '#000000', 'glyph': '#2980B9'},
+    CULTURAL: {'background': '#E67E22', 'border': '#000000', 'glyph': '#D35400'},
+    HEALTH: {'background': '#E74C3C', 'border': '#000000', 'glyph': '#C0392B'}
+}
+            
+ALL_FILTER_OPTIONS = {
+    # Food and Drink places
+    'restaurant': FOOD_AND_DRINK,
+    'bar': FOOD_AND_DRINK,
+    'cafe': FOOD_AND_DRINK,
+    'bakery': FOOD_AND_DRINK,
+    'meal_takeaway': FOOD_AND_DRINK,
+    'meal_delivery': FOOD_AND_DRINK,
+    'supermarket': FOOD_AND_DRINK,
+    'liquor_store': FOOD_AND_DRINK,
+    
+    # Shopping places
+    'shopping_mall': SHOPPING,
+    'grocery_store': SHOPPING,
+    'clothing_store': SHOPPING,
+    'department_store': SHOPPING,
+    'convenience_store': SHOPPING,
+    'electronics_store': SHOPPING,
+    'furniture_store': SHOPPING,
+    'hardware_store': SHOPPING,
+    'book_store': SHOPPING,
+    'jewelry_store': SHOPPING,
+    'store': SHOPPING,
+    'florist': SHOPPING,
+    'bicycle_store': SHOPPING,
+    'home_goods_store': SHOPPING,
+    'shoe_store': SHOPPING,
+    'pet_store': SHOPPING,
+
+    # Entertainment and Recreation places
+    'amusement_park': ENTERTAINMENT,
+    'aquarium': ENTERTAINMENT,
+    'art_gallery': ENTERTAINMENT,
+    'bowling_alley': ENTERTAINMENT,
+    'casino': ENTERTAINMENT,
+    'movie_theater': ENTERTAINMENT,
+    'museum': ENTERTAINMENT,
+    'night_club': ENTERTAINMENT,
+    'park': ENTERTAINMENT,
+    'stadium': ENTERTAINMENT,
+    'zoo': ENTERTAINMENT,
+    'gym': ENTERTAINMENT,
+    'tourist_attraction': ENTERTAINMENT,
+    'spa': ENTERTAINMENT,
+    
+    # Lodging places
+    'hotel': LODGING,
+    'lodging': LODGING,
+    'rv_park': LODGING,
+    'campground': LODGING,
+
+    # Services
+    'atm': SERVICES,
+    'bank': SERVICES,
+    'car_rental': SERVICES,
+    'car_repair': SERVICES,
+    'car_wash': SERVICES,
+    'gas_station': SERVICES,
+    'laundry': SERVICES,
+    'post_office': SERVICES,
+    'real_estate_agency': SERVICES,
+    'hair_care': SERVICES,
+    'beauty_salon': SERVICES,
+    'insurance_agency': SERVICES,
+    'locksmith': SERVICES,
+    'moving_company': SERVICES,
+    'storage': SERVICES,
+    'lawyer': SERVICES,
+    'painter': SERVICES,
+    'plumber': SERVICES,
+    'roofing_contractor': SERVICES,
+
+    # Transportation
+    'airport': TRANSPORTATION,
+    'bus_station': TRANSPORTATION,
+    'train_station': TRANSPORTATION,
+    'subway_station': TRANSPORTATION,
+    'taxi_stand': TRANSPORTATION,
+    'parking': TRANSPORTATION,
+    'light_rail_station': TRANSPORTATION,
+    'transit_station': TRANSPORTATION,
+
+    # Cultural & Public Places
+    'church': CULTURAL,
+    'mosque': CULTURAL,
+    'hindu_temple': CULTURAL,
+    'synagogue': CULTURAL,
+    'place_of_worship': CULTURAL,
+    'library': CULTURAL,
+    'city_hall': CULTURAL,
+    'courthouse': CULTURAL,
+    'embassy': CULTURAL,
+    'fire_station': CULTURAL,
+    'police': CULTURAL,
+    'school': CULTURAL,
+    'university': CULTURAL,
+    'cemetery': CULTURAL,
+
+    # Healthcare
+    'hospital': HEALTH,
+    'pharmacy': HEALTH,
+    'dentist': HEALTH,
+    'doctor': HEALTH,
+    'physiotherapist': HEALTH,
+    'veterinary_care': HEALTH,
+    'medical_clinic': HEALTH
+}
+ 
 # Initialize Google Maps client
 try:
     gmaps_client = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY)
 except Exception as e:
     logger.error(f"Failed to initialize Google Maps client: {e}")
     gmaps_client = None
+
 
 def get_coordinates_from_address(address: str) -> Optional[Tuple[float, float]]:
     """
@@ -91,6 +226,29 @@ def get_route_data(start: str, destination: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error getting route data: {e}")
         return None
 
+def get_users_preferences() -> list:
+    user_filters = ['zoo', 'restaurant', 'store']
+    
+    return user_filters
+
+def get_place_color(place_type: str, filters_selected: list) -> str:
+    """
+    Get the color associated with the place
+
+    Args:
+        place_type: the type of place, ex: restaurant, zoo, etc.
+        filters_selected: all the filters selected by the user
+
+    Returns:
+        The color associated with the place. The default color is #1b7a28.
+
+    """
+    for each_place_type in place_type:
+        if (each_place_type in filters_selected):
+            return FILTER_COLORS[ALL_FILTER_OPTIONS[each_place_type]]
+    return DEFAULT_COLOR
+
+
 def get_places_along_route(decoded_points: list) -> Dict[int, list]:
     """
     Find places of interest along the route.
@@ -102,29 +260,102 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
         Dictionary mapping point indices to place information
     """
     places = {}
+    filters_selected = get_users_preferences()
 
     if not gmaps_client:
         return places
 
+    dict_index = 0
     for i in range(0, len(decoded_points), POLYLINE_STEP):
         point = decoded_points[i]
         try:
-            nearby = gmaps_client.places_nearby(
-                location=(point['lat'], point['lng']),
-                radius=SEARCH_RADIUS_METERS,
-                type=DEFAULT_PLACE_TYPE
-            )
+            # loop through each filter, I don't think there is a way to put multiple filters into places_nearby()
+            for each_filter in filters_selected:
+                nearby = gmaps_client.places_nearby(
+                    location=(point['lat'], point['lng']),
+                    radius=SEARCH_RADIUS_METERS,
+                    type=each_filter,
+                )
 
-            if not nearby.get('results'):
-                continue
+                if not nearby.get('results'):
+                    continue
 
-            for place in nearby['results'][:PLACES_PER_COORDINATE]:
-                place_details = gmaps_client.place(place['place_id'])
-                if place_details.get('result', {}).get('formatted_address'):
-                    coords = get_coordinates_from_address(place_details['result']['formatted_address'])
-                    if coords:
-                        places[i] = [coords[0], coords[1], place['name']]
-                        break
+                for place in nearby['results'][:(PLACES_PER_COORDINATE)]:
+                    place_details = gmaps_client.place(place['place_id'])
+                    if place_details.get('result', {}).get('formatted_address'):
+                        coords = [float(place['geometry']['location']['lat']), float(place['geometry']['location']['lng'])]
+                        place_color = get_place_color(place['types'], filters_selected) #get the color of the marker
+
+                        # try to get rating information:
+                        # rating = X/5 rating; user_ratings_total = total number of ratings
+                        rating = place.get('rating') if place.get('rating') is not None else place_details.get('result', {}).get('rating')
+                        user_ratings_total = place.get('user_ratings_total') if place.get('user_ratings_total') is not None else place_details.get('result', {}).get('user_ratings_total')
+
+                        # attempting to standardize types
+                        try:
+                            rating = float(rating) if rating is not None else None
+                        except (TypeError, ValueError):
+                            rating = None
+
+                        try:
+                            user_ratings_total = int(user_ratings_total) if user_ratings_total is not None else None
+                        except (TypeError, ValueError):
+                            user_ratings_total = None
+
+                        # get a photo URL if available (use Google Places Photo endpoint)
+                        photo_url = None
+                        photos = place_details.get('result', {}).get('photos') or place.get('photos')
+                        if photos and isinstance(photos, list) and len(photos) > 0:
+                            photo_ref = photos[0].get('photo_reference')
+                            if photo_ref and settings.GOOGLE_MAPS_API_KEY:
+                                photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={photo_ref}&key={settings.GOOGLE_MAPS_API_KEY}"
+                                # this API query should only activate if this image is inspected
+
+                        # get current weather for the place coordinates using Open-Meteo (no API key required)
+                        weather = None
+                        try:
+                            lat, lng = coords[0], coords[1]
+                            weather_resp = requests.get(
+                                f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}"
+                                f"&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m"
+                                f"&timezone=America%2FLos_Angeles",
+                                timeout=5
+                            )
+                            if weather_resp.status_code == 200:
+                                weather_json = weather_resp.json()
+                                current = weather_json.get('current')
+                                if current:
+                                    weather = {
+                                        'temperature_c': current.get('temperature_2m'),
+                                        'feels_like': current.get('apparent_temperature'),
+                                        'humidity': current.get('relative_humidity_2m'),
+                                        'precipitation': current.get('precipitation'),
+                                        'weather_code': current.get('weather_code'),
+                                        'wind_speed': current.get('wind_speed_10m'),
+                                        'time': current.get('time')
+                                    }
+                                    '''
+                                    weather code:
+                                        0: Clear sky
+                                        1: Mainly clear
+                                        2: Partly cloudy
+                                        3: Overcast
+                                        45/48: Foggy
+                                        51-55: Drizzle
+                                        61-65: Rain
+                                        71-75: Snow
+                                        80-82: Rain showers
+                                        95+: Thunderstorms
+                                    '''
+                        except Exception as e:
+                            logger.debug(f"Weather fetch failed for {place.get('name')}: {e}")
+
+                        if coords:
+                            # Append rating, user_ratings_total, photo_url and weather to the place entry
+                            places[dict_index] = [coords[0], coords[1], place['name'], place_color,
+                                                rating, user_ratings_total, photo_url, weather]
+                            dict_index += 1
+                            break
 
         except Exception as e:
             logger.error(f"Error finding places near point {i}: {e}")
@@ -136,9 +367,17 @@ def index(request):
     """
     Main view for rendering the route map with nearby places.
     """
-    # TODO: Get these from form data or URL parameters
-    start = "San Diego, CA"
-    destination = "Irvine, CA"
+    # Get the user's input from the query parameters
+    start = request.GET.get('start')
+    destination = request.GET.get('destination')
+    if not start or not destination:
+        # If it's just opening the root page (no query), return HTML
+        if "text/html" in request.headers.get("Accept", ""):
+            return render(request, "index.html", {"google_api_key": settings.GOOGLE_MAPS_API_KEY})
+        return JsonResponse({"error": "Missing start or destination"}, status=400)
+    
+    # Debug print to verify it works
+    print(f"Received start: {start}, destination: {destination}")
 
     # Get route information
     route_data = get_route_data(start, destination)
@@ -153,7 +392,20 @@ def index(request):
 
     # Find places along the route
     places = get_places_along_route(route_data['decoded_points'])
+    # print(places)
 
+    # If this request comes from React (expects JSON)
+    if request.headers.get("Accept") == "application/json" or request.GET.get("format") == "json":
+        return JsonResponse({
+            "route_polyline": route_data["polyline"],
+            "center": route_data["center"],
+            "places": places,
+            "destination": dest_coords,
+            "start_coords": start_coords, # return start and end coords for frontend zoom in/out
+            "dest_coords": dest_coords, 
+        })
+
+    # Otherwise, render the HTML template
     context = {
         'google_api_key': settings.GOOGLE_MAPS_API_KEY,
         'route_polyline': route_data['polyline'],

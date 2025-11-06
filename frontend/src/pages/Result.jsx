@@ -1,7 +1,7 @@
 /* This is the Page 2 after user clicked in Home page, contains Map + POI + sidebar */
 
 import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
 import MapView from "../components/MapView";
 import Sidebar from "../components/Sidebar";
 import DetailsModal from "../components/DetailsModal";
@@ -11,12 +11,20 @@ export default function Result() {
     const { state } = useLocation(); // contains start/end data
     const [selectedPOI, setSelectedPOI] = useState(null);
 
+    if (!state) {
+        return (
+            <div>
+                <p>Redirecting to Home...</p>
+                <Navigate to="/" replace />
+            </div>
+        );
+    }
     return (
-        <div style={{ display: "flex", height: "100vh", position: "relative" }}>
+        <div className="result-container">
             <Sidebar setSelectedPOI={setSelectedPOI} />
             <MapView start={state?.start} end={state?.end} setSelectedPOI={setSelectedPOI} />
             {selectedPOI && (
-                <DetailsModal poi={selectedPOI} onClose={() => setSelectedPOI(null)} />
+                <DetailsModal poi={selectedPOI}  />
             )}
         </div>
     );
