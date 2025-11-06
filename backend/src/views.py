@@ -14,13 +14,33 @@ from typing import Tuple, Dict, Any, Optional
 from geographiclib.geodesic import Geodesic
 from googlemaps.convert import decode_polyline
 
+from collections import namedtuple
+
 logger = logging.getLogger(__name__)
 
 # Constants
 SEARCH_RADIUS_METERS = 5000
 PLACES_PER_COORDINATE = 3
-POLYLINE_STEP = 27  # step size for reducing route points
+POLYLINE_STEP = 23  # step size for reducing route points
 DEFAULT_PLACE_TYPE = 'restaurant'
+
+FOOD_AND_DRINK = "Food and Drink"
+LODGING = "Lodging"
+ENTERTAINMENT = "Entertainment and Recreation"
+SHOPPING = "Shopping"
+
+DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
+
+#give the user an option to customize their search from the parameters:
+FILTER_COLORS = {FOOD_AND_DRINK:{'background': '#f54263', 'border': '#000000', 'glyph': '#570010'}, 
+                LODGING: {'background': '#253bfa', 'border': '#000000', 'glyph': '#1b7a28'}, 
+                ENTERTAINMENT: {'background': '#f3fa25', 'border': '#000000', 'glyph': '#858a00'}, 
+                SHOPPING: {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}}
+            
+ALL_FILTER_OPTIONS = {'grocery_store': SHOPPING, 'clothing_store': SHOPPING, 'store': SHOPPING,
+                'amusement_park': ENTERTAINMENT, 'movie_theater': ENTERTAINMENT, 'wildlife_park': ENTERTAINMENT, 'zoo': ENTERTAINMENT,
+                'hotel': LODGING, 'inn': LODGING, 
+                'restaurant': FOOD_AND_DRINK, 'vegan_restaurant': FOOD_AND_DRINK, 'vegetarian_restaurant': FOOD_AND_DRINK}
 
 # Initialize Google Maps client
 try:
@@ -91,6 +111,29 @@ def get_route_data(start: str, destination: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error getting route data: {e}")
         return None
 
+def get_users_preferences() -> list:
+    user_filters = ['zoo', 'restaurant', 'store']
+    
+    return user_filters
+
+def get_place_color(place_type: str, filters_selected: list) -> str:
+    """
+    Get the color associated with the place
+
+    Args:
+        place_type: the type of place, ex: restaurant, zoo, etc.
+        filters_selected: all the filters selected by the user
+
+    Returns:
+        The color associated with the place. The default color is #1b7a28.
+
+    """
+    for each_place_type in place_type:
+        if (each_place_type in filters_selected):
+            return FILTER_COLORS[ALL_FILTER_OPTIONS[each_place_type]]
+    return DEFAULT_COLOR
+
+
 def get_places_along_route(decoded_points: list) -> Dict[int, list]:
     """
     Find places of interest along the route.
@@ -102,29 +145,36 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
         Dictionary mapping point indices to place information
     """
     places = {}
+    filters_selected = get_users_preferences()
 
     if not gmaps_client:
         return places
 
+    dict_index = 0
     for i in range(0, len(decoded_points), POLYLINE_STEP):
         point = decoded_points[i]
         try:
-            nearby = gmaps_client.places_nearby(
-                location=(point['lat'], point['lng']),
-                radius=SEARCH_RADIUS_METERS,
-                type=DEFAULT_PLACE_TYPE
-            )
+            #loop through each filter, I don't think there is a way to put multiple filters into places_nearby()
+            for each_filter in filters_selected:
+                nearby = gmaps_client.places_nearby(
+                    location=(point['lat'], point['lng']),
+                    radius=SEARCH_RADIUS_METERS,
+                    type=each_filter,
+                )
 
-            if not nearby.get('results'):
-                continue
+                if not nearby.get('results'):
+                    continue
 
-            for place in nearby['results'][:PLACES_PER_COORDINATE]:
-                place_details = gmaps_client.place(place['place_id'])
-                if place_details.get('result', {}).get('formatted_address'):
-                    coords = get_coordinates_from_address(place_details['result']['formatted_address'])
-                    if coords:
-                        places[i] = [coords[0], coords[1], place['name']]
-                        break
+                for place in nearby['results'][:(PLACES_PER_COORDINATE)]:
+                    place_details = gmaps_client.place(place['place_id'])
+                    if place_details.get('result', {}).get('formatted_address'):
+                        coords = [float(place['geometry']['location']['lat']), float(place['geometry']['location']['lng'])]
+                        place_color = get_place_color(place['types'], filters_selected) #get the color of the marker
+                        
+                        if coords:
+                            places[dict_index] = [coords[0], coords[1], place['name'], place_color]
+                            dict_index += 1
+                            break
 
         except Exception as e:
             logger.error(f"Error finding places near point {i}: {e}")

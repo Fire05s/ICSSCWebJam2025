@@ -20,6 +20,8 @@ key_path = BASE_DIR / "src/api_key.txt"
 with open(key_path, 'r') as api_key_file:
     GOOGLE_MAPS_API_KEY = api_key_file.readline().strip()
 
+print(GOOGLE_MAPS_API_KEY)
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
