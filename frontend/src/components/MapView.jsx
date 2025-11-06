@@ -28,8 +28,6 @@ const isValidLatLng = (coord) =>
 // Helper function to safely process coordinates
 const processCoords = (coords) => {
     if (!coords) return null;
-
-    // ... (Coordinate processing logic remains the same)
     if (Array.isArray(coords) && coords.length === 2) {
         return { lat: Number(coords[0]), lng: Number(coords[1]) };
     }
@@ -56,6 +54,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
     const [POIs, setPOIs] = useState([]);
     const [startCoords, setStartCoords] = useState(null);
     const [destCoords, setDestCoords] = useState(null);
+    const [isLoading, setIsLoading] = useState(false); // Track map route loading
 
     const onMapLoad = useCallback((map) => {
         mapRef.current = map;
@@ -86,6 +85,8 @@ export default function MapView({ start, end, setSelectedPOI }) {
 
         hasFitBounds.current = false;
 
+        setIsLoading(true); // Show loading overlay while fetching data
+
         fetch(`${BACKEND_URL}?start=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&format=json`)
             .then((res) => res.json())
             .then((data) => {
@@ -104,7 +105,8 @@ export default function MapView({ start, end, setSelectedPOI }) {
                 setStartCoords(finalStart);
                 setDestCoords(finalDest);
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => setIsLoading(false)); // Hide loading overlay after done or error
     }, [start, end]);
 
     // Fit bounds only once when route data is ready
@@ -131,6 +133,12 @@ export default function MapView({ start, end, setSelectedPOI }) {
 
     return (
         <div className="map-wrapper">
+            {isLoading && (
+                <div className="map-loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Calculating route...</p>
+                </div>
+            )}
             <GoogleMap
                 mapContainerClassName="map-container"
                 mapContainerStyle={containerStyle}
@@ -181,7 +189,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
                 ))}
             </GoogleMap>
             
-            {/* Add dot color box here */}
+            {/* Add dot color box*/}
             <div className="dot-color">
                 {Object.entries(color).map(([label, color]) => (
                     <div key={label} className="color-item">
