@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import "./MapView.css";
 
@@ -11,17 +11,29 @@ export default function MapView({ start, end, setSelectedPOI }) {
 
     const [center, setCenter] = useState({ lat: 33.6441, lng: -117.8452 });
     const [userLocation, setUserLocation] = useState(null);
+    const [POIs, setPOIs] = useState([]);
+    const mapRef = useRef(null); // Ref for the Google Map instance
 
+    const onMapLoad = useCallback((map) => {
+        mapRef.current = map;
+    }, []);
+
+    // Locate user
     const locateUser = useCallback(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const coords = {
+                    const userCoords = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
                     };
-                    setCenter(coords);
-                    setUserLocation(coords);
+                    setCenter(userCoords);
+                    setUserLocation(userCoords);
+                    // Smooth pan to user's location
+                    if (mapRef.current) {
+                        mapRef.current.panTo(userCoords);
+                        mapRef.current.setZoom(14);
+                    }
                 },
                 (error) => {
                     console.error("Error getting location:", error);
@@ -34,13 +46,29 @@ export default function MapView({ start, end, setSelectedPOI }) {
     }, []);
 
     useEffect(() => {
+        // Auto-locate once on mount
         locateUser();
     }, [locateUser]);
 
-    const POIs = [
-        { id: 1, name: "Art Museum", type: "landmark", lat: 33.6441, lng: -117.8400 },
-        { id: 2, name: "Sunset Café", type: "restaurant", lat: 33.6441, lng: -117.8252 },
-    ];
+    useEffect(() => {
+        // Fetch route + places from backend
+        if (start && end) {
+            fetch(`http://127.0.0.1:8000/?start=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&format=json`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.route_polyline) {
+                        setCenter(data.center);
+                        const placesArray = Object.values(data.places).map(([lat, lng, name, color]) => ({
+                            lat, lng, name, color
+                        }));
+                        setPOIs(placesArray);
+                    } else {
+                        console.error(data.error);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [start, end]);
 
     if (!isLoaded) return <div>Loading map...</div>;
 
@@ -66,13 +94,21 @@ export default function MapView({ start, end, setSelectedPOI }) {
                     />
                 )}
 
-                {POIs.map((poi) => (
+                {POIs.map((poi, index) => (
                     <Marker
-                        key={poi.id}
+                        key={index}
                         position={{ lat: poi.lat, lng: poi.lng }}
                         onClick={(e) => {
                             e.domEvent.stopPropagation();
                             setSelectedPOI(poi);
+                        }}
+                        icon={{
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: poi.color?.background || "#4285F4",
+                            fillOpacity: 1,
+                            strokeWeight: 2,
+                            strokeColor: poi.color?.border || "#000",
                         }}
                     />
                 ))}

@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Tuple, Dict, Any, Optional
 from geographiclib.geodesic import Geodesic
 from googlemaps.convert import decode_polyline
+from django.views.decorators.csrf import csrf_exempt
 
 from collections import namedtuple
 
@@ -186,9 +187,17 @@ def index(request):
     """
     Main view for rendering the route map with nearby places.
     """
-    # TODO: Get these from form data or URL parameters
-    start = "San Diego, CA"
-    destination = "Irvine, CA"
+    # Get the user's input from the query parameters
+    start = request.GET.get('start')
+    destination = request.GET.get('destination')
+    if not start or not destination:
+        # If it's just opening the root page (no query), return HTML
+        if "text/html" in request.headers.get("Accept", ""):
+            return render(request, "index.html", {"google_api_key": settings.GOOGLE_MAPS_API_KEY})
+        return JsonResponse({"error": "Missing start or destination"}, status=400)
+    
+     # Debug print to verify it works
+    print(f"Received start: {start}, destination: {destination}")
 
     # Get route information
     route_data = get_route_data(start, destination)
@@ -204,6 +213,16 @@ def index(request):
     # Find places along the route
     places = get_places_along_route(route_data['decoded_points'])
 
+    # If this request comes from React (expects JSON)
+    if request.headers.get("Accept") == "application/json" or request.GET.get("format") == "json":
+        return JsonResponse({
+            "route_polyline": route_data["polyline"],
+            "center": route_data["center"],
+            "places": places,
+            "destination": dest_coords,
+        })
+
+    # Otherwise, render the HTML template
     context = {
         'google_api_key': settings.GOOGLE_MAPS_API_KEY,
         'route_polyline': route_data['polyline'],
