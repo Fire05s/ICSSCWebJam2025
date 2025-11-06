@@ -42,7 +42,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
     const mapRef = useRef(null);
     const hasFitBounds = useRef(false);
 
-    // 🌟 NEW STATE: To store the user's fetched location
+    // To store the user's fetched location
     const [defaultCenter, setDefaultCenter] = useState(FALLBACK_CENTER);
     const [route, setRoute] = useState([]);
     const [POIs, setPOIs] = useState([]);
@@ -53,7 +53,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
         mapRef.current = map;
     }, []);
 
-    // 📍 EFFECT 1: Fetch User Location on Mount
+    // Fetch User Location on Mount
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -63,18 +63,16 @@ export default function MapView({ start, end, setSelectedPOI }) {
                         lng: position.coords.longitude,
                     });
                 },
-                // On error (user denies, timeout, etc.), we fall back to FALLBACK_CENTER
+                // On error (user denies, timeout, etc.), fall back to FALLBACK_CENTER
                 (error) => {
                     console.warn("Geolocation Error:", error.message);
-                    // State remains FALLBACK_CENTER
                 },
-                // Options
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         }
     }, []); // Empty dependency array means this runs only once on mount
 
-    // 🗺️ EFFECT 2: Fetch route and POIs
+    // Fetch route and POIs
     useEffect(() => {
         if (!start || !end) return;
 
@@ -86,7 +84,9 @@ export default function MapView({ start, end, setSelectedPOI }) {
                 if (!data.route_polyline) return;
 
                 const decodedRoute = polyline.decode(data.route_polyline).map(([lat, lng]) => ({ lat, lng }));
-                const placesArray = Object.values(data.places || {}).map(([lat, lng, name, color]) => ({ lat, lng, name, color }));
+                const placesArray = Object.values(data.places || {}).map(
+                    ([lat, lng, name, color, rating, user_ratings_total, photo_url, weather]) => 
+                        ({ lat, lng, name, color, rating, user_ratings_total, photo_url, weather}));
                 const finalStart = processCoords(data.start_coords);
                 const finalDest = processCoords(data.dest_coords);
 
@@ -99,7 +99,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
             .catch(console.error);
     }, [start, end]);
 
-    // 🧭 EFFECT 3: Fit bounds only once when route data is ready
+    // Fit bounds only once when route data is ready
     useEffect(() => {
         if (mapRef.current && isValidLatLng(startCoords) && isValidLatLng(destCoords) && !hasFitBounds.current) {
 
@@ -116,7 +116,7 @@ export default function MapView({ start, end, setSelectedPOI }) {
         }
     }, [startCoords, destCoords, POIs]);
 
-    // Helper to check if the center is the fallback (i.e., user location failed to load)
+    // Helper to check if the center is the fallback 
     const isUserLocationLoaded = defaultCenter.lat !== FALLBACK_CENTER.lat || defaultCenter.lng !== FALLBACK_CENTER.lng;
     
     if (!isLoaded) return <div>Loading map...</div>;
@@ -125,13 +125,13 @@ export default function MapView({ start, end, setSelectedPOI }) {
         <div className="map-wrapper">
             <GoogleMap
                 mapContainerStyle={containerStyle}
-                // 🚀 Set initial center to the user's location state
+                // Set initial center to the user's location state
                 center={defaultCenter}
                 zoom={13}
                 onLoad={onMapLoad}
                 onClick={() => setSelectedPOI(null)}
             >
-                {/* 🌟 FIX: Use defaultCenter for the position, and only render if not the fallback */}
+                {/* Use defaultCenter for the position, and only render if not the fallback */}
                 {isUserLocationLoaded && (
                     <Marker
                         position={defaultCenter} // Corrected variable
