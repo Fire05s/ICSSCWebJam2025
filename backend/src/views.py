@@ -171,9 +171,25 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
                     if place_details.get('result', {}).get('formatted_address'):
                         coords = [float(place['geometry']['location']['lat']), float(place['geometry']['location']['lng'])]
                         place_color = get_place_color(place['types'], filters_selected) #get the color of the marker
-                        
+
+                        # try to get rating information:
+                        # rating = X/5 rating; user_ratings_total = total number of ratings
+                        rating = place.get('rating') if place.get('rating') is not None else place_details.get('result', {}).get('rating')
+                        user_ratings_total = place.get('user_ratings_total') if place.get('user_ratings_total') is not None else place_details.get('result', {}).get('user_ratings_total')
+
+                        # attempting to standardize types
+                        try:
+                            rating = float(rating) if rating is not None else None
+                        except (TypeError, ValueError):
+                            rating = None
+
+                        try:
+                            user_ratings_total = int(user_ratings_total) if user_ratings_total is not None else None
+                        except (TypeError, ValueError):
+                            user_ratings_total = None
+
                         if coords:
-                            places[dict_index] = [coords[0], coords[1], place['name'], place_color]
+                            places[dict_index] = [coords[0], coords[1], place['name'], place_color, rating, user_ratings_total]
                             dict_index += 1
                             break
 
@@ -196,7 +212,7 @@ def index(request):
             return render(request, "index.html", {"google_api_key": settings.GOOGLE_MAPS_API_KEY})
         return JsonResponse({"error": "Missing start or destination"}, status=400)
     
-     # Debug print to verify it works
+    # Debug print to verify it works
     print(f"Received start: {start}, destination: {destination}")
 
     # Get route information
