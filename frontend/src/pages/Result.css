@@ -1,0 +1,31 @@
+.result-container {
+    display: flex;
+    height: 100vh; /*full screen height */
+    width: 100vw; /* full screen width */
+    overflow: hidden; /* prevents scrollbars */
+}
+
+.sidebar {
+    width: 25%;
+    /* left panel takes 25% width */
+    min-width: 300px;
+    /* prevent collapsing */
+    background-color: #355457;
+    color: white;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.map-container {
+    flex: 1;
+    /* map takes remaining space */
+    position: relative;
+}
+
+.map-container>div {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
