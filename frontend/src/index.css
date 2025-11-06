@@ -4,7 +4,7 @@
 	font-weight: 400;
 
 	color-scheme: light dark;
-	color: rgba(255, 255, 255, 0.87);
+	color: #ffffffde;
 	background-color: #213547;
 
 	font-synthesis: none;
@@ -12,6 +12,11 @@
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	-webkit-text-size-adjust: 100%;
+	
+	--nvbar-bg-color: #607a93;
+	--credit-text-color: rgb(206, 201, 201);
+	--sidebar-bg-color: #213547;
+	--sidebar-text-color: #ffffff;
 }
 
 a {
@@ -61,6 +66,10 @@ button:focus-visible {
 	:root {
 		color: #213547;
 		background-color: #ffffff;
+		--nvbar-bg-color: #72a8ad;
+		--credit-text-color: #868383ff;
+		--sidebar-bg-color: #ffffff;
+		--sidebar-text-color: #213547;
 	}
 	a:hover {
 		color: #747bff;
