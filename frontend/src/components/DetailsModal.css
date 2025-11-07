@@ -55,31 +55,11 @@
     margin-right: 6px;
 }
 
-.details-modal button {
-    display: block;
-    width: 100%;
-    margin-top: 12px;
-    padding: 10px 16px;
-    font-weight: 600;
-    background-color: var(--button-bg);
-    color: var(--modal-text);
-    border: 1px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-}
-
-.details-modal button:hover {
-    background-color: var(--link-hover);
-    color: white;
-}
-
 /* Light mode */
 @media (prefers-color-scheme: light) {
     :root {
         --modal-bg: #ffffff;
         --modal-text: #213547;
-        --button-bg: #f9f9f9;
         --link-hover: #747bff;
     }
 }
@@ -87,9 +67,8 @@
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
     :root {
-        --modal-bg: #1a1a1a;
+        --modal-bg: #213547;
         --modal-text: #ffffff;
-        --button-bg: #2c2c2c;
         --link-hover: #4a90e2;
     }
 }
