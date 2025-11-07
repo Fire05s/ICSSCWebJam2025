@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 # Constants
 SEARCH_RADIUS_METERS = 5000
 PLACES_PER_COORDINATE = 3
-POLYLINE_STEP = 35  # increased step size to reduce API calls
+POLYLINE_STEP = 23  # step size for reducing route points
 DEFAULT_PLACE_TYPE = 'restaurant'
-MAX_FILTERS_TO_QUERY = 8  # reduced max filters to decrease API calls
+MAX_FILTERS_TO_QUERY = 12  # limit number of place-type queries per point to avoid very long runtimes
 
 FOOD_AND_DRINK = "Food & Drink"
 LODGING = "Lodging"
@@ -305,38 +305,6 @@ def set_user_preferences(request):
         logger.error(f"Failed to set preferences: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
-def calculate_travel_time(origin_coords: Tuple[float, float], dest_coords: Tuple[float, float]) -> Optional[int]:
-    """
-    Calculate the travel time in minutes between two points using Google Directions API.
-    
-    Args:
-        origin_coords: (lat, lng) of starting point
-        dest_coords: (lat, lng) of destination
-        
-    Returns:
-        Travel time in minutes, or None if calculation fails
-    """
-    if not gmaps_client:
-        return None
-        
-    try:
-        directions = gmaps_client.directions(
-            origin=f"{origin_coords[0]},{origin_coords[1]}", 
-            destination=f"{dest_coords[0]},{dest_coords[1]}", 
-            mode="driving"
-        )
-        
-        if not directions or not directions[0].get('legs'):
-            return None
-            
-        # Get duration in seconds and convert to minutes
-        duration_seconds = directions[0]['legs'][0]['duration']['value']
-        return round(duration_seconds / 60)
-        
-    except Exception as e:
-        logger.error(f"Error calculating travel time: {e}")
-        return None
-
 def get_place_color(place_type: str, filters_selected: list) -> str:
     """
     Get the color associated with the place
@@ -354,14 +322,30 @@ def get_place_color(place_type: str, filters_selected: list) -> str:
             return FILTER_COLORS[ALL_FILTER_OPTIONS[each_place_type]]
     return DEFAULT_COLOR
 
+def get_place_website(place_id: str, gmaps_client) -> Optional[str]:
+    """
+    Get place website. If no website present, returns None
 
-def get_places_along_route(decoded_points: list, start_coords: Optional[Tuple[float, float]] = None) -> Dict[int, list]:
+    Args:
+        place_id: ID of inputted place
+
+    Returns:
+        Place website.
+    """
+    place_details = gmaps_client.place(place_id)
+
+    try:
+        return place_details.get('result').get('website')
+    except Exception as e:
+        print(f"Error fetching place website: {e}")
+        return None
+
+def get_places_along_route(decoded_points: list) -> Dict[int, list]:
     """
     Find places of interest along the route.
     
     Args:
         decoded_points: List of decoded polyline points
-        start_coords: Optional tuple of (lat, lng) for calculating travel times
     
     Returns:
         Dictionary mapping point indices to place information
@@ -416,6 +400,8 @@ def get_places_along_route(decoded_points: list, start_coords: Optional[Tuple[fl
                     # try to get rating information from the nearby result
                     rating = place.get('rating')
                     user_ratings_total = place.get('user_ratings_total')
+
+                    website = get_place_website(place['place_id'], gmaps_client)
 
                     # normalize rating fields
                     try:
@@ -476,16 +462,13 @@ def get_places_along_route(decoded_points: list, start_coords: Optional[Tuple[fl
                             logger.debug(f"Weather fetch failed for {place.get('name')}: {e}")
 
                         if coords:
-                            # Calculate travel time from start point
-                            travel_time = None
-                            if 'start_coords' in locals():
-                                travel_time = calculate_travel_time(start_coords, (coords[0], coords[1]))
-                            
-                            # Append rating, user_ratings_total, photo_url, weather and travel_time to the place entry
+                            # Append rating, user_ratings_total, photo_url and weather to the place entry
                             places[dict_index] = [coords[0], coords[1], place['name'], place_color,
-                                                rating, user_ratings_total, photo_url, weather, travel_time]
+                                                rating, user_ratings_total, photo_url, weather, website]
+                            print(website)
                             dict_index += 1
                             break
+
 
         except Exception as e:
             logger.error(f"Error finding places near point {i}: {e}")
@@ -521,7 +504,7 @@ def index(request):
         return HttpResponse("Unable to geocode addresses", status=500)
 
     # Find places along the route
-    places = get_places_along_route(route_data['decoded_points'], start_coords)
+    places = get_places_along_route(route_data['decoded_points'])
     # print(places)
 
     # If this request comes from React (expects JSON)
