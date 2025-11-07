@@ -13,12 +13,12 @@ const FALLBACK_CENTER = { lat: 33.6441, lng: -117.8452 }; // E.g., Irvine, CA
 const color = {
     "Food & Drink": "#FF8C8C",
     "Lodging": "#4ECDC4",
-    "Entertainment": "#FFD93D",
+    "Entertainment & Landmarks": "#FFD93D",
     "Shopping": "#6A4C93",
-    "Services": "#95A5A6",
-    "Transportation": "#3498DB",
-    "Cultural": "#E67E22",
-    "Health": "#FF1900"
+    // "Services": "#95A5A6",
+    // "Transportation": "#3498DB",
+    // "Cultural": "#E67E22",
+    // "Health": "#FF1900"
 };
 
 // Helper: Validate LatLng
@@ -44,7 +44,7 @@ const processCoords = (coords) => {
     return null;
 };
 
-export default function MapView({ start, end, setSelectedPOI }) {
+export default function MapView({ start, end, setSelectedPOI, preferencesVersion=0 }) {
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     });
@@ -91,10 +91,29 @@ export default function MapView({ start, end, setSelectedPOI }) {
 
         setIsLoading(true); // Show loading overlay while fetching data
 
-        fetch(`${BACKEND_URL}?start=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&format=json`)
-            .then((res) => res.json())
+        // Prefer explicit env var VITE_BACKEND_URL in dev; fall back to localhost:8000 if not set
+        const BACKEND_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
+            || 'http://127.0.0.1:8000';
+        const endpoint = `${BACKEND_BASE.replace(/\/$/, '')}/?start=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}&format=json`;
+        console.debug('Fetching route from', endpoint);
+
+        const controller = new AbortController();
+        // Increase timeout to 60s to allow the backend more time when many filters are selected
+        const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+        fetch(endpoint, { signal: controller.signal })
+            .then((res) => {
+                if (!res.ok) {
+                    // Try to get any text for debugging
+                    return res.text().then((t) => { throw new Error(`HTTP ${res.status}: ${t.slice(0,200)}`); });
+                }
+                const contentType = res.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) return res.json();
+                return res.text().then((t) => { throw new Error(`Expected JSON but got: ${t.slice(0,200)}`); });
+            })
             .then((data) => {
-                if (!data.route_polyline) return;
+                console.debug('route response filters_used:', data.filters_used, 'applied_filters:', data.applied_filters, 'places_count:', Object.keys(data.places || {}).length)
+                if (!data || !data.route_polyline) throw new Error('No route data');
 
                 const decodedRoute = polyline.decode(data.route_polyline).map(([lat, lng]) => ({ lat, lng }));
                 const placesArray = Object.values(data.places || {}).map(
@@ -109,9 +128,25 @@ export default function MapView({ start, end, setSelectedPOI }) {
                 setStartCoords(finalStart);
                 setDestCoords(finalDest);
             })
-            .catch(console.error)
-            .finally(() => setIsLoading(false)); // Hide loading overlay after done or error
-    }, [start, end]);
+            .catch((err) => {
+                if (err.name === 'AbortError') console.error('Route fetch aborted (timeout)');
+                else console.error('Route fetch error', err);
+                // reset route/pois to avoid stale UI
+                setRoute([]);
+                setPOIs([]);
+                setStartCoords(null);
+                setDestCoords(null);
+            })
+            .finally(() => {
+                clearTimeout(timeout);
+                setIsLoading(false);
+            }); // Hide loading overlay after done or error
+
+        return () => {
+            controller.abort();
+            clearTimeout(timeout);
+        };
+    }, [start, end, preferencesVersion]);
 
     // Fit bounds only once when route data is ready
     useEffect(() => {

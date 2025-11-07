@@ -10,7 +10,7 @@ export default function Navbar() {
             display: "flex",
             justifyContent: "space-between"
         }}>
-            <h2>Journey Map</h2>
+            <h2>Along the Way</h2>
             <div>
                 <Link to="/" style={{ color: "white", textDecoration: "none", marginRight: "15px"}}>Home</Link>
             </div>

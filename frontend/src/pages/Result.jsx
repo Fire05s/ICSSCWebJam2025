@@ -10,6 +10,7 @@ import "./Result.css";
 export default function Result() {
     const { state } = useLocation(); // contains start/end data
     const [selectedPOI, setSelectedPOI] = useState(null);
+    const [preferencesVersion, setPreferencesVersion] = useState(0);
 
     if (!state) {
         return (
@@ -21,8 +22,8 @@ export default function Result() {
     }
     return (
         <div className="result-container">
-            <Sidebar setSelectedPOI={setSelectedPOI} />
-            <MapView start={state?.start} end={state?.end} setSelectedPOI={setSelectedPOI} />
+            <Sidebar setSelectedPOI={setSelectedPOI} onPreferencesUpdated={() => setPreferencesVersion((v) => v + 1)} />
+            <MapView start={state?.start} end={state?.end} setSelectedPOI={setSelectedPOI} preferencesVersion={preferencesVersion} />
             {selectedPOI && (
                 <DetailsModal poi={selectedPOI}  />
             )}

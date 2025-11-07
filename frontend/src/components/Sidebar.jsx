@@ -6,10 +6,77 @@ const POIs = [
     { id: 2, name: "Sunset Café", type: "restaurant", image: "https://image" },
 ];
 
-export default function Sidebar({ setSelectedPOI }) {
-    const [
-        POIType,setPOIType
-    ]=useState("Resturants")
+export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
+    const CATEGORY_OPTIONS = [
+        "Food and Drink",
+        "Lodging",
+        "Entertainment & Landmarks",
+        "Shopping",
+        // "Services",
+        // "Transportation",
+        // "Cultural",
+        // "Health",
+    ]
+
+    const [selectedCategories, setSelectedCategories] = useState([])
+    const [isUpdating, setIsUpdating] = useState(false)
+    const [updateMessage, setUpdateMessage] = useState("")
+
+    const toggleCategory = (cat) => {
+        setSelectedCategories((prev) =>
+            prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+        )
+    }
+
+    const handleUpdate = async () => {
+        setIsUpdating(true)
+        setUpdateMessage("")
+        try {
+            // Resolve backend base URL: prefer Vite env VITE_BACKEND_URL, otherwise default to local Django dev server
+            const BACKEND_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
+                || 'http://127.0.0.1:8000'
+            const endpoint = `${BACKEND_BASE.replace(/\/$/, '')}/api/preferences/`
+            console.debug('POST preferences to', endpoint)
+            const resp = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categories: selectedCategories }),
+            })
+
+            // Try to read JSON if available, otherwise read text for debugging
+            let bodyText = null
+            let bodyJson = null
+            const contentType = resp.headers.get('content-type') || ''
+            if (contentType.includes('application/json')) {
+                try {
+                    bodyJson = await resp.json()
+                } catch (e) {
+                    // fall through to text
+                    bodyText = await resp.text()
+                }
+            } else {
+                bodyText = await resp.text()
+            }
+
+            if (resp.ok) {
+                setUpdateMessage('Preferences updated')
+                return true
+            } else {
+                // Prefer JSON error field, then text, then status
+                const errMsg = (bodyJson && (bodyJson.error || JSON.stringify(bodyJson))) || bodyText || `HTTP ${resp.status}`
+                setUpdateMessage(errMsg)
+                console.debug('update preferences failed', resp.status, errMsg)
+                return false
+            }
+        } catch (err) {
+            // Network-level error (DNS, CORS, refused connection, etc.)
+            console.debug('update preferences network error', err)
+            setUpdateMessage(err.message || 'Network error')
+            return false
+        } finally {
+            setIsUpdating(false)
+        }
+    }
     return (
         <div style={{
             width: "430px",
@@ -20,10 +87,32 @@ export default function Sidebar({ setSelectedPOI }) {
         }}>
             <h2>Points of Interest</h2>
 
-            <div>
-            <button onClick={()=>setPOIType("Resturants")}type="button"className="clicker">Resturants</button>
-            <button onClick={()=>setPOIType("Landmarks")}type="button"className=" clicker">Landmarks</button>
+            <div style={{marginBottom: '10px'}}>
+                <div style={{marginBottom: '6px', fontWeight: 600}}>Choose Categories:</div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    {CATEGORY_OPTIONS.map((cat) => (
+                        <label key={cat} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            <input
+                                type="checkbox"
+                                checked={selectedCategories.includes(cat)}
+                                onChange={() => toggleCategory(cat)}
+                            />
+                            {cat}
+                        </label>
+                    ))}
+                </div>
+                    <div style={{marginTop: '8px'}}>
+                        <button onClick={async () => {
+                            const ok = await handleUpdate();
+                            // notify parent so MapView can re-fetch only on success
+                            if (ok && onPreferencesUpdated) onPreferencesUpdated();
+                        }} disabled={isUpdating || selectedCategories.length === 0} className="clicker" type="button">
+                            {isUpdating ? 'Updating...' : 'Update'}
+                        </button>
+                        <span style={{marginLeft: '8px'}}>{updateMessage}</span>
+                    </div>
             </div>
+
             {POIs.map((poi) => (
                 <div
                     key={poi.id}

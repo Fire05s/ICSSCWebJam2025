@@ -21,8 +21,8 @@ export default function Home() {
     return (
         <div style={{ textAlign: "center", minHeight: "100vh", position: "relative" }}>
             <div style={{ marginTop: "10vh" }}>
-                <h1>Journey Map</h1>
-                <p>Plan your route and explore landmarks & restaurants along the way.</p>
+                <h1>Along the Way</h1>
+                <p>Plan your route and explore restaurants along the way.</p>
                 <LocationForm formData={formData} setFormData={setFormData} onSubmit={handleSubmit} />
             </div>
             <footer style={{

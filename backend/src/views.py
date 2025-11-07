@@ -9,6 +9,7 @@ import logging
 import yaml
 import googlemaps
 import requests
+import random
 from datetime import datetime
 from typing import Tuple, Dict, Any, Optional
 from geographiclib.geodesic import Geodesic
@@ -24,10 +25,11 @@ SEARCH_RADIUS_METERS = 5000
 PLACES_PER_COORDINATE = 3
 POLYLINE_STEP = 23  # step size for reducing route points
 DEFAULT_PLACE_TYPE = 'restaurant'
+MAX_FILTERS_TO_QUERY = 12  # limit number of place-type queries per point to avoid very long runtimes
 
 FOOD_AND_DRINK = "Food and Drink"
 LODGING = "Lodging"
-ENTERTAINMENT = "Entertainment and Recreation"
+ENTERTAINMENT = "Entertainment"
 SHOPPING = "Shopping"
 SERVICES = "Services"
 TRANSPORTATION = "Transportation"
@@ -42,10 +44,10 @@ FILTER_COLORS = {
     LODGING: {'background': '#4ECDC4', 'border': '#000000', 'glyph': '#1b7a28'}, 
     ENTERTAINMENT: {'background': '#FFD93D', 'border': '#000000', 'glyph': '#858a00'}, 
     SHOPPING: {'background': '#6A4C93', 'border': '#000000', 'glyph': '#013d09'},
-    SERVICES: {'background': '#95A5A6', 'border': '#000000', 'glyph': '#2C3E50'},
-    TRANSPORTATION: {'background': '#3498DB', 'border': '#000000', 'glyph': '#2980B9'},
-    CULTURAL: {'background': '#E67E22', 'border': '#000000', 'glyph': '#D35400'},
-    HEALTH: {'background': "#FF1900", 'border': '#000000', 'glyph': '#C0392B'}
+    # SERVICES: {'background': '#95A5A6', 'border': '#000000', 'glyph': '#2C3E50'},
+    # TRANSPORTATION: {'background': '#3498DB', 'border': '#000000', 'glyph': '#2980B9'},
+    # CULTURAL: {'background': '#E67E22', 'border': '#000000', 'glyph': '#D35400'},
+    # HEALTH: {'background': "#FF1900", 'border': '#000000', 'glyph': '#C0392B'}
 }
 
 ALL_FILTER_OPTIONS = {
@@ -54,28 +56,28 @@ ALL_FILTER_OPTIONS = {
     'bar': FOOD_AND_DRINK,
     'cafe': FOOD_AND_DRINK,
     'bakery': FOOD_AND_DRINK,
-    'meal_takeaway': FOOD_AND_DRINK,
-    'meal_delivery': FOOD_AND_DRINK,
-    'supermarket': FOOD_AND_DRINK,
-    'liquor_store': FOOD_AND_DRINK,
+    # 'meal_takeaway': FOOD_AND_DRINK,
+    # 'meal_delivery': FOOD_AND_DRINK,
+    # 'supermarket': FOOD_AND_DRINK,
+    # 'liquor_store': FOOD_AND_DRINK,
     
     # Shopping places
     'shopping_mall': SHOPPING,
-    'grocery_store': SHOPPING,
+    # 'grocery_store': SHOPPING,
     'clothing_store': SHOPPING,
     'department_store': SHOPPING,
     'convenience_store': SHOPPING,
-    'electronics_store': SHOPPING,
-    'furniture_store': SHOPPING,
-    'hardware_store': SHOPPING,
+    # 'electronics_store': SHOPPING,
+    # 'furniture_store': SHOPPING,
+    # 'hardware_store': SHOPPING,
     'book_store': SHOPPING,
     'jewelry_store': SHOPPING,
     'store': SHOPPING,
     'florist': SHOPPING,
-    'bicycle_store': SHOPPING,
-    'home_goods_store': SHOPPING,
-    'shoe_store': SHOPPING,
-    'pet_store': SHOPPING,
+    # 'bicycle_store': SHOPPING,
+    # 'home_goods_store': SHOPPING,
+    # 'shoe_store': SHOPPING,
+    # 'pet_store': SHOPPING,
 
     # Entertainment and Recreation places
     'amusement_park': ENTERTAINMENT,
@@ -100,61 +102,65 @@ ALL_FILTER_OPTIONS = {
     'campground': LODGING,
 
     # Services
-    'atm': SERVICES,
-    'bank': SERVICES,
-    'car_rental': SERVICES,
-    'car_repair': SERVICES,
-    'car_wash': SERVICES,
-    'gas_station': SERVICES,
-    'laundry': SERVICES,
-    'post_office': SERVICES,
-    'real_estate_agency': SERVICES,
-    'hair_care': SERVICES,
-    'beauty_salon': SERVICES,
-    'insurance_agency': SERVICES,
-    'locksmith': SERVICES,
-    'moving_company': SERVICES,
-    'storage': SERVICES,
-    'lawyer': SERVICES,
-    'painter': SERVICES,
-    'plumber': SERVICES,
-    'roofing_contractor': SERVICES,
+    # 'atm': SERVICES,
+    # 'bank': SERVICES,
+    # 'car_rental': SERVICES,
+    # 'car_repair': SERVICES,
+    # 'car_wash': SERVICES,
+    # 'gas_station': SERVICES,
+    # 'laundry': SERVICES,
+    # 'post_office': SERVICES,
+    # 'real_estate_agency': SERVICES,
+    # 'hair_care': SERVICES,
+    # 'beauty_salon': SERVICES,
+    # 'insurance_agency': SERVICES,
+    # 'locksmith': SERVICES,
+    # 'moving_company': SERVICES,
+    # 'storage': SERVICES,
+    # 'lawyer': SERVICES,
+    # 'painter': SERVICES,
+    # 'plumber': SERVICES,
+    # 'roofing_contractor': SERVICES,
 
     # Transportation
-    'airport': TRANSPORTATION,
-    'bus_station': TRANSPORTATION,
-    'train_station': TRANSPORTATION,
-    'subway_station': TRANSPORTATION,
-    'taxi_stand': TRANSPORTATION,
-    'parking': TRANSPORTATION,
-    'light_rail_station': TRANSPORTATION,
-    'transit_station': TRANSPORTATION,
+    # 'airport': TRANSPORTATION,
+    # 'bus_station': TRANSPORTATION,
+    # 'train_station': TRANSPORTATION,
+    # 'subway_station': TRANSPORTATION,
+    # 'taxi_stand': TRANSPORTATION,
+    # 'parking': TRANSPORTATION,
+    # 'light_rail_station': TRANSPORTATION,
+    # 'transit_station': TRANSPORTATION,
 
     # Cultural & Public Places
-    'church': CULTURAL,
-    'mosque': CULTURAL,
-    'hindu_temple': CULTURAL,
-    'synagogue': CULTURAL,
-    'place_of_worship': CULTURAL,
-    'library': CULTURAL,
-    'city_hall': CULTURAL,
-    'courthouse': CULTURAL,
-    'embassy': CULTURAL,
-    'fire_station': CULTURAL,
-    'police': CULTURAL,
-    'school': CULTURAL,
-    'university': CULTURAL,
-    'cemetery': CULTURAL,
+    # 'church': CULTURAL,
+    # 'mosque': CULTURAL,
+    # 'hindu_temple': CULTURAL,
+    # 'synagogue': CULTURAL,
+    # 'place_of_worship': CULTURAL,
+    # 'library': CULTURAL,
+    # 'city_hall': CULTURAL,
+    # 'courthouse': CULTURAL,
+    # 'embassy': CULTURAL,
+    # 'fire_station': CULTURAL,
+    # 'police': CULTURAL,
+    # 'school': CULTURAL,
+    # 'university': CULTURAL,
+    # 'cemetery': CULTURAL,
 
     # Healthcare
-    'hospital': HEALTH,
-    'pharmacy': HEALTH,
-    'dentist': HEALTH,
-    'doctor': HEALTH,
-    'physiotherapist': HEALTH,
-    'veterinary_care': HEALTH,
-    'medical_clinic': HEALTH
+    # 'hospital': HEALTH,
+    # 'pharmacy': HEALTH,
+    # 'dentist': HEALTH,
+    # 'doctor': HEALTH,
+    # 'physiotherapist': HEALTH,
+    # 'veterinary_care': HEALTH,
+    # 'medical_clinic': HEALTH
 }
+
+# module-level user filters (simple prototype storage)
+USER_FILTERS = []
+LAST_APPLIED_FILTERS = []
 
 # Initialize Google Maps client
 try:
@@ -227,9 +233,43 @@ def get_route_data(start: str, destination: str) -> Optional[Dict[str, Any]]:
         return None
 
 def get_users_preferences() -> list:
-    user_filters = ['zoo', 'restaurant', 'store']
-    
-    return user_filters
+    """Return the current list of place-type filters to apply.
+
+    This reads the module-level USER_FILTERS which can be updated via
+    the `set_user_preferences` view. Note: this is a simple, prototype
+    approach and stores preferences globally (not per-user/session).
+    """
+    return USER_FILTERS
+
+
+@csrf_exempt
+def set_user_preferences(request):
+    """Accept POST JSON { categories: [..] } where categories are human labels
+    (e.g. "Food and Drink", "Health", etc.). Convert those to place types
+    using ALL_FILTER_OPTIONS and store in USER_FILTERS.
+    """
+    global USER_FILTERS
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+        categories = payload.get('categories', [])
+        if not isinstance(categories, list):
+            return JsonResponse({'error': 'categories must be a list'}, status=400)
+        print(categories)
+
+        USER_FILTERS = []
+        for place_type, category in ALL_FILTER_OPTIONS.items():
+            if category in categories or ("Entertainment & Landmarks" in categories and category == "Entertainment"):
+                USER_FILTERS.append(place_type)
+        random.shuffle(USER_FILTERS)
+        print(USER_FILTERS)
+
+        return JsonResponse({'status': 'ok', 'filters_count': len(USER_FILTERS), 'filters': USER_FILTERS})
+    except Exception as e:
+        logger.error(f"Failed to set preferences: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 def get_place_color(place_type: str, filters_selected: list) -> str:
     """
@@ -262,15 +302,33 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
     places = {}
     filters_selected = get_users_preferences()
 
+    # Protect against extremely large filter lists which can cause many external API calls
+    if not filters_selected:
+        return places
+
+    # Determine filters to actually query (slice to manageable size)
+    applied_filters = list(filters_selected)[:MAX_FILTERS_TO_QUERY]
+    global LAST_APPLIED_FILTERS
+    LAST_APPLIED_FILTERS = applied_filters
+    if len(applied_filters) < 1:
+        return places
+
+    # If the user requested many filters, widen polyline step to reduce number of search points
+    step_multiplier = 1
+    if len(filters_selected) > MAX_FILTERS_TO_QUERY:
+        step_multiplier = 1 + (len(filters_selected) // MAX_FILTERS_TO_QUERY)
+    effective_step = POLYLINE_STEP * step_multiplier
+    print(filters_selected)
+
     if not gmaps_client:
         return places
 
     dict_index = 0
-    for i in range(0, len(decoded_points), POLYLINE_STEP):
+    for i in range(0, len(decoded_points), effective_step):
         point = decoded_points[i]
         try:
             # loop through each filter, I don't think there is a way to put multiple filters into places_nearby()
-            for each_filter in filters_selected:
+            for each_filter in applied_filters:
                 nearby = gmaps_client.places_nearby(
                     location=(point['lat'], point['lng']),
                     radius=SEARCH_RADIUS_METERS,
@@ -281,35 +339,35 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
                     continue
 
                 for place in nearby['results'][:(PLACES_PER_COORDINATE)]:
-                    place_details = gmaps_client.place(place['place_id'])
-                    if place_details.get('result', {}).get('formatted_address'):
-                        coords = [float(place['geometry']['location']['lat']), float(place['geometry']['location']['lng'])]
-                        place_color = get_place_color(place['types'], filters_selected) #get the color of the marker
+                    # Use the nearby search result directly to avoid an extra place() call (speeds up queries)
+                    if not place.get('geometry'):
+                        continue
+                    coords = [float(place['geometry']['location']['lat']), float(place['geometry']['location']['lng'])]
+                    place_types = place.get('types', [])
+                    place_color = get_place_color(place_types, filters_selected) # get the color of the marker
 
-                        # try to get rating information:
-                        # rating = X/5 rating; user_ratings_total = total number of ratings
-                        rating = place.get('rating') if place.get('rating') is not None else place_details.get('result', {}).get('rating')
-                        user_ratings_total = place.get('user_ratings_total') if place.get('user_ratings_total') is not None else place_details.get('result', {}).get('user_ratings_total')
+                    # try to get rating information from the nearby result
+                    rating = place.get('rating')
+                    user_ratings_total = place.get('user_ratings_total')
 
-                        # attempting to standardize types
-                        try:
-                            rating = float(rating) if rating is not None else None
-                        except (TypeError, ValueError):
-                            rating = None
+                    # normalize rating fields
+                    try:
+                        rating = float(rating) if rating is not None else None
+                    except (TypeError, ValueError):
+                        rating = None
 
-                        try:
-                            user_ratings_total = int(user_ratings_total) if user_ratings_total is not None else None
-                        except (TypeError, ValueError):
-                            user_ratings_total = None
+                    try:
+                        user_ratings_total = int(user_ratings_total) if user_ratings_total is not None else None
+                    except (TypeError, ValueError):
+                        user_ratings_total = None
 
-                        # get a photo URL if available (use Google Places Photo endpoint)
-                        photo_url = None
-                        photos = place_details.get('result', {}).get('photos') or place.get('photos')
-                        if photos and isinstance(photos, list) and len(photos) > 0:
-                            photo_ref = photos[0].get('photo_reference')
-                            if photo_ref and settings.GOOGLE_MAPS_API_KEY:
-                                photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={photo_ref}&key={settings.GOOGLE_MAPS_API_KEY}"
-                                # this API query should only activate if this image is inspected
+                    # get a photo URL if available (use Google Places Photo endpoint)
+                    photo_url = None
+                    photos = place.get('photos')
+                    if photos and isinstance(photos, list) and len(photos) > 0:
+                        photo_ref = photos[0].get('photo_reference')
+                        if photo_ref and settings.GOOGLE_MAPS_API_KEY:
+                            photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={photo_ref}&key={settings.GOOGLE_MAPS_API_KEY}"
 
                         # get current weather for the place coordinates using Open-Meteo (no API key required)
                         weather = None
@@ -402,7 +460,9 @@ def index(request):
             "places": places,
             "destination": dest_coords,
             "start_coords": start_coords, # return start and end coords for frontend zoom in/out
-            "dest_coords": dest_coords, 
+            "dest_coords": dest_coords,
+            "filters_used": get_users_preferences(),
+            "applied_filters": LAST_APPLIED_FILTERS,
         })
 
     # Otherwise, render the HTML template
