@@ -16,14 +16,14 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # read Google Maps API key
-key_path = BASE_DIR / "src/api_key.txt"
+key_path = BASE_DIR / "src/api-google_key.txt"
 with open(key_path, 'r') as api_key_file:
     GOOGLE_MAPS_API_KEY = api_key_file.readline().strip()
 
 # read DeepSeek API key
 ai_key_path = BASE_DIR / "src/api-deepseek_key.txt"
 with open(ai_key_path, 'r') as ai_api_key_file:
-    DEEPSEEK_API_KEY = api_key_file.readline().strip()
+    DEEPSEEK_API_KEY = ai_api_key_file.readline().strip()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
