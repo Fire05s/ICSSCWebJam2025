@@ -51,6 +51,7 @@ export default function MapView({ start, end, setSelectedPOI, preferencesVersion
 
     const mapRef = useRef(null);
     const hasFitBounds = useRef(false);
+       const [error, setError] = useState(null);
 
     // To store the user's fetched location
     const [defaultCenter, setDefaultCenter] = useState(FALLBACK_CENTER);
@@ -117,8 +118,8 @@ export default function MapView({ start, end, setSelectedPOI, preferencesVersion
 
                 const decodedRoute = polyline.decode(data.route_polyline).map(([lat, lng]) => ({ lat, lng }));
                 const placesArray = Object.values(data.places || {}).map(
-                    ([lat, lng, name, color, rating, user_ratings_total, photo_url, weather]) => 
-                        ({ lat, lng, name, color, rating, user_ratings_total, photo_url, weather}));
+                    ([lat, lng, name, color, rating, user_ratings_total, photo_url, weather, travel_time]) => 
+                        ({ lat, lng, name, color, rating, user_ratings_total, photo_url, weather, travel_time}));
                 const finalStart = processCoords(data.start_coords);
                 const finalDest = processCoords(data.dest_coords);
 

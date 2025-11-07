@@ -117,7 +117,7 @@ export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
                     />
                 </div>
 
-                <div style={{marginTop: '10px',  fontWeight: 600}}>Describe the places you'd like to visit on your journey:</div>
+                <div style={{marginTop: '10px',  fontWeight: 600}}>(Optional) Describe the places you'd like to visit on your journey:</div>
                 <div style={{marginTop: '12px', marginBottom: '8px'}}>
                     <input
                         type="text"

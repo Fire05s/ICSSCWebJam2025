@@ -10,7 +10,18 @@ export default function DetailsModal({ poi, onClose }) {
         rating,
         user_ratings_total,
         weather,
+        travel_time,
     } = poi;
+
+    // Format travel_time (minutes) into HH:MM (hours:minutes)
+    const formatTravelTime = (minutes) => {
+        if (minutes === null || minutes === undefined) return "Unknown";
+        const h = Math.floor(Number(minutes) / 60);
+        const m = Number(minutes) % 60;
+        const hh = String(h);
+        const mm = String(m).padStart(2, '0');
+        return `${hh}:${mm}`;
+    };
 
     // Map weather code → readable text
     const getWeatherDescription = (code) => {
@@ -37,6 +48,13 @@ export default function DetailsModal({ poi, onClose }) {
                 <img src={photo_url} alt={name} className="poi-image" />
             ) : (
                 <div className="poi-placeholder">No image available</div>
+            )}
+
+            {travel_time !== null && (
+                <p>
+                    <span className="material-symbols-outlined">schedule</span>
+                    {formatTravelTime(travel_time)} from Start
+                </p>
             )}
 
             {rating ? (
