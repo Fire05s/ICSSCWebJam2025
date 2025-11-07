@@ -18,6 +18,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from collections import namedtuple
 
+from .deepseek_processor import ask_model
+
 logger = logging.getLogger(__name__)
 
 # Constants
@@ -255,9 +257,11 @@ def set_user_preferences(request):
     try:
         payload = json.loads(request.body.decode('utf-8') or '{}')
         categories = payload.get('categories', [])
+        deepseek_input = payload.get('custom_input', '')
         if not isinstance(categories, list):
             return JsonResponse({'error': 'categories must be a list'}, status=400)
         print(categories)
+        print(f"deepseek_input: {deepseek_input}")
 
         USER_FILTERS = []
         for place_type, category in ALL_FILTER_OPTIONS.items():
@@ -266,7 +270,13 @@ def set_user_preferences(request):
         random.shuffle(USER_FILTERS)
         print(USER_FILTERS)
 
-        return JsonResponse({'status': 'ok', 'filters_count': len(USER_FILTERS), 'filters': USER_FILTERS})
+        deepseekTags = ask_model(settings.DEEPSEEK_API_KEY, deepseek_input)
+        print(deepseekTags)
+        if deepseekTags: # not empty
+            USER_FILTERS = deepseekTags.split(',') + USER_FILTERS
+        print(USER_FILTERS)
+
+        return JsonResponse({'status': 'ok', 'filters_count': len(USER_FILTERS), 'filters': USER_FILTERS, 'deepseek_input': deepseek_input})
     except Exception as e:
         logger.error(f"Failed to set preferences: {e}")
         return JsonResponse({'error': str(e)}, status=500)
@@ -476,3 +486,20 @@ def index(request):
     }
 
     return render(request, 'index.html', context)
+
+@csrf_exempt
+def deepseek_api(request):
+    """POST endpoint for DeepSeek model. Accepts JSON { query: "..." } and returns model response."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+        query = payload.get('query', '')
+        if not query:
+            return JsonResponse({'error': 'Missing query'}, status=400)
+        api_key = settings.DEEPSEEK_API_KEY
+        result = ask_model(api_key, query)
+        return JsonResponse({'result': result})
+    except Exception as e:
+        logger.error(f"DeepSeek API error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

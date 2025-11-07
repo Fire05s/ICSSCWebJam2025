@@ -30,24 +30,15 @@ def ask_model(api_key: str, query: str) -> str | None:
 
     # Initialize the data sent to DeepSeek
     data = {
-        "model": "deepseek/deepseek-chat:free",
+        "model": "deepseek/deepseek-chat-v3-0324",
         "messages":[{"role": "system", "content": "You are an AI journey/roadtrip helper bot that, given a user's desires for their ideal journey,"
                                                     "will give the best filters from the Google Places API:\n"
 
-                                                    "'restaurant', 'bar', 'cafe', bakery', 'meal_takeaway', 'meal _delivery', 'supermarket', "
-                                                    "'liquor_store', 'shopping_mall', 'grocery_store, 'clothing_store', 'department_store', "
-                                                    "'convenience_store', 'electronics_store', 'furniture_store', 'hardware_store', 'book_store', "
-                                                    "'jewelry_store', 'store', 'florist', 'bicycle_store', 'home_good_store', 'shoe_store', "
-                                                    "'pet_store', 'amusement_park', 'aquarium', 'art_gallery', 'bowling_alley', 'casino', "
-                                                    "'movie_theater', 'museum', 'night_club', 'park', 'stadium', 'zoo', 'gym', 'tourist_attraction', "
-                                                    "'spa', 'hotel', 'lodging', 'rv_park', 'campground', 'atm', 'bank', 'car_rental', 'car_repair', "
-                                                    "'car_wash', 'gas_station', 'laundry', 'post_office', 'real_estate_agency', 'hair_care', "
-                                                    "'beauty_salon', 'insurance_agency', 'locksmith', 'moving_company', 'storage', 'lawyer', 'painter', "
-                                                    "'plumber', 'roofing_contractor', 'airport', 'bus_station', 'train_station', 'subway_station', "
-                                                    "'taxi_stand', 'parking', 'light_rail_station', 'transit_station', 'church', 'mosque', 'hindu_temple', "
-                                                    "'synagogue', 'place_of_worship', 'library', 'city_hall', 'courthouse', 'embassy', 'fire_station', "
-                                                    "'police', 'school', 'university', 'cemetery', 'hospital', 'pharmacy', 'dentist', 'doctor', "
-                                                    "'physiotherapist', 'veterinary_care', and 'medial_clinic'.\n"
+                                                    "'restaurant', 'bar', 'cafe', bakery', 'shopping_mall', 'clothing_store', 'department_store', "
+                                                    "'convenience_store', 'book_store', 'jewelry_store', 'store', 'florist', 'amusement_park', "
+                                                    "'aquarium', 'art_gallery', 'bowling_alley', 'casino', 'movie_theater', 'museum', 'night_club', "
+                                                    "'park', 'stadium', 'zoo', 'gym', 'tourist_attraction', 'spa', 'hotel', 'lodging', 'rv_park', and "
+                                                    "'campground'.\n"
 
                                                     "Given the user's prompt, choose the best tags for their trip in a comma-separated list. You MUST "
                                                     "not return any other result. You should not add any additional comments to your resposne. The ideal "
@@ -75,13 +66,34 @@ def ask_model(api_key: str, query: str) -> str | None:
                                                     "Here is another example prompt with an informational explanation:\n"
 
                                                     "Input: im not sure what is on the route but in general i would like to see anything interesting and "
-                                                    "fun for the family\n"
+                                                    "fun for my family\n"
 
                                                     "Output: amusement_park,aquarium,art_gallery,bowling_alley,movie_theater,museum,park,stadium,zoo,gym,spa,tourist_attraction\n"
 
-                                                    "Explanation: The user is not sure about what they want to visit fun points of interest that are family friendly. "
-                                                    "Because of this broad query, we included all entertainment results from the Google Places API except the non-family "
-                                                    "friendly locations, i.e. casino and night_club."
+                                                    "Explanation: The user is not sure about what they want to visit, except that they want to see fun "
+                                                    "points of interest that are family friendly. Because of this broad query, we included all "
+                                                    "entertainment results from the Google Places API except the non-family friendly locations, i.e. "
+                                                    "casino and night_club.\n"
+
+                                                    "Here is another example prompt with an informational explanation:\n"
+
+                                                    "Input: i would like to mosques, train stations, and trendy restaurants\n"
+
+                                                    "Output: restaurant\n"
+
+                                                    "Explanation: The user requested to visit mosques, train stations, and 'trendy' restaurants. Mosques "
+                                                    "train stations are not valid tags that we can give, so we cannot include them in our output list. "
+                                                    "The user specifically requested 'trendy' restaurants; however, because we cannot filter restaurants "
+                                                    "further, we can only give the tag restaurant.\n"
+
+                                                    "Here is another example prompt with an informational explanation:\n"
+
+                                                    "Input: i would like to go to the hardware store and the bank\n"
+
+                                                    "Output:\n"
+
+                                                    "Explanation: The user requested to visit the hardware store and the bank, but these are not valid "
+                                                    "tags or locations we can direct them to. That means that we return an empty string.\n"
 
 
                                                     "It is EXTREMELY IMPORTANT that you do not deviate from this format, and nothing should "
