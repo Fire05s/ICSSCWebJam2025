@@ -19,9 +19,9 @@ export default function Sidebar({ setSelectedPOI }) {
             backgroundColor: "var(--sidebar-bg-color)"
         }}>
             <h2>Points of Interest</h2>
- 
+
             <div>
-             <button onClick={()=>setPOIType("Resturants")}type="button"className="clicker">Resturants</button>
+            <button onClick={()=>setPOIType("Resturants")}type="button"className="clicker">Resturants</button>
             <button onClick={()=>setPOIType("Landmarks")}type="button"className=" clicker">Landmarks</button>
             </div>
             {POIs.map((poi) => (
@@ -33,12 +33,7 @@ export default function Sidebar({ setSelectedPOI }) {
                     <img src={poi.image} alt={poi.name} style={{ width: "50px", height: "50px", marginRight: "10px" }} />
                     <div>
                         <strong>{poi.name}</strong>
-<<<<<<< HEAD
-                        <p style={{ margin: 0, fontSize: "12px", color: "#666" }}>{poi.type}</p>
-
-=======
                         <p style={{ margin: 0, fontSize: "12px", color: "var(--sidebar-text-color)" }}>{poi.type}</p>
->>>>>>> 52f80eb417d09f1a7d33fb7755faf2ff5cc6bf64
                     </div>
                 </div>
             ))}
