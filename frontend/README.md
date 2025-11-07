@@ -18,7 +18,8 @@ npm run dev
 
 The React app should begin running on `http://localhost:5173`.
 
-To make changes to the page, modify [`src/App.jsx`](src/App.jsx).
+To make changes to Home page, modify [`src/pages/Home.jsx`](src/pages/Home.jsx).
+To make changes to Result page, modify [`src/pages/Result.jsx`](src/pages/Result.jsx).
 
 ## Connecting to API endpoints
 
