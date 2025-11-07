@@ -1,10 +1,7 @@
 import React from "react";
 import "./sidebar.css"
 import {useState} from "react"
-const POIs = [
-    { id: 1, name: "Art Museum", type: "landmark", image: "https://image" },
-    { id: 2, name: "Sunset Café", type: "restaurant", image: "https://image" },
-];
+const POIs = [];
 
 export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
     const CATEGORY_OPTIONS = [
