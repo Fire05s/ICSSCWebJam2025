@@ -129,6 +129,7 @@ export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
                 </div>
                 <div style={{marginTop: '8px'}}>
                     <button onClick={async () => {
+                        setSelectedPOI(null); // close POI panel
                         const ok = await handleUpdate();
                         // notify parent so MapView can re-fetch only on success
                         if (ok && onPreferencesUpdated) onPreferencesUpdated();
