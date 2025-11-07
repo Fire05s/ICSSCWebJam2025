@@ -38,7 +38,7 @@ SHOPPING = "Shopping"
 # CULTURAL = "Cultural & Public Places"
 # HEALTH = "Healthcare"
 
-DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
+DEFAULT_COLOR = {'background': "#A8C8A0", 'border': '#013d09', 'glyph': '#013d09'}
 
 #give the user an option to customize their search from the parameters:
 FILTER_COLORS = {

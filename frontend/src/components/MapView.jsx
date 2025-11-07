@@ -15,6 +15,7 @@ const color = {
     "Lodging": "#4ECDC4",
     "Entertainment & Landmarks": "#FFD93D",
     "Shopping": "#6A4C93",
+    "Others": "#A8C8A0",
     // "Services": "#95A5A6",
     // "Transportation": "#3498DB",
     // "Cultural": "#E67E22",
