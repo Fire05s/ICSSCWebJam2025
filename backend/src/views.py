@@ -238,8 +238,7 @@ def get_users_preferences() -> list:
     """Return the current list of place-type filters to apply.
 
     This reads the module-level USER_FILTERS which can be updated via
-    the `set_user_preferences` view. Note: this is a simple, prototype
-    approach and stores preferences globally (not per-user/session).
+    the set_user_preferences view.
     """
     return USER_FILTERS
 
