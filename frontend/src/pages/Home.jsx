@@ -19,10 +19,19 @@ export default function Home() {
     };
 
     return (
-        <div style={{ textAlign: "center", marginTop: "10vh" }}>
-            <h1>Journey Map</h1>
-            <p>Plan your route and explore landmarks & restaurants along the way.</p>
-            <LocationForm formData={formData} setFormData={setFormData} onSubmit={handleSubmit} />
+        <div style={{ textAlign: "center", minHeight: "100vh", position: "relative" }}>
+            <div style={{ marginTop: "10vh" }}>
+                <h1>Journey Map</h1>
+                <p>Plan your route and explore landmarks & restaurants along the way.</p>
+                <LocationForm formData={formData} setFormData={setFormData} onSubmit={handleSubmit} />
+            </div>
+            <footer style={{
+                fontSize: "0.8em",        
+                color: "var(--credit-text-color)",     
+                padding: "50px 0",
+            }}>
+                © 2025 ICSSC WebJam. All rights reserved.
+            </footer>
         </div>
     );
 }
