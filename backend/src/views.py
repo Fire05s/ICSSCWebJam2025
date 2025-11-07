@@ -465,7 +465,6 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
                             # Append rating, user_ratings_total, photo_url and weather to the place entry
                             places[dict_index] = [coords[0], coords[1], place['name'], place_color,
                                                 rating, user_ratings_total, photo_url, weather, website]
-                            print(website)
                             dict_index += 1
                             break
 
