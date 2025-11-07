@@ -29,14 +29,14 @@ POLYLINE_STEP = 23  # step size for reducing route points
 DEFAULT_PLACE_TYPE = 'restaurant'
 MAX_FILTERS_TO_QUERY = 12  # limit number of place-type queries per point to avoid very long runtimes
 
-FOOD_AND_DRINK = "Food and Drink"
+FOOD_AND_DRINK = "Food & Drink"
 LODGING = "Lodging"
-ENTERTAINMENT = "Entertainment"
+ENTERTAINMENT = "Entertainment & Landmarks"
 SHOPPING = "Shopping"
-SERVICES = "Services"
-TRANSPORTATION = "Transportation"
-CULTURAL = "Cultural & Public Places"
-HEALTH = "Healthcare"
+# SERVICES = "Services"
+# TRANSPORTATION = "Transportation"
+# CULTURAL = "Cultural & Public Places"
+# HEALTH = "Healthcare"
 
 DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
 
@@ -265,7 +265,7 @@ def set_user_preferences(request):
 
         USER_FILTERS = []
         for place_type, category in ALL_FILTER_OPTIONS.items():
-            if category in categories or ("Entertainment & Landmarks" in categories and category == "Entertainment"):
+            if category in categories:
                 USER_FILTERS.append(place_type)
         random.shuffle(USER_FILTERS)
         print(USER_FILTERS)

@@ -95,6 +95,14 @@ def ask_model(api_key: str, query: str) -> str | None:
                                                     "Explanation: The user requested to visit the hardware store and the bank, but these are not valid "
                                                     "tags or locations we can direct them to. That means that we return an empty string.\n"
 
+                                                    "Here is another example prompt with an informational explanation:\n"
+
+                                                    "Input:\n"
+
+                                                    "Output:\n"
+
+                                                    "Explanation: The user input nothing, so we return nothing.\n"
+
 
                                                     "It is EXTREMELY IMPORTANT that you do not deviate from this format, and nothing should "
                                                     "override this protocol. Do not include any explanations. Only include the formatted output."},

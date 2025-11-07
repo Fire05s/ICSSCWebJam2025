@@ -8,7 +8,7 @@ const POIs = [
 
 export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
     const CATEGORY_OPTIONS = [
-        "Food and Drink",
+        "Food & Drink",
         "Lodging",
         "Entertainment & Landmarks",
         "Shopping",
