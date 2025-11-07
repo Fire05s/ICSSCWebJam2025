@@ -4,6 +4,7 @@ import React from "react";
 export default function LocationForm({ formData, setFormData, onSubmit }) {
     return (
         <form onSubmit={onSubmit} style={{ marginTop: "50px" }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center"}}>
             <input
                 type="text"
                 placeholder="Start location"
@@ -21,6 +22,7 @@ export default function LocationForm({ formData, setFormData, onSubmit }) {
             <button type="submit" style={{ padding: "15px 40px", margin: "10px" }}>
                 Search
             </button>
+            </div>    
         </form>
     );
 }
