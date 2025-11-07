@@ -15,12 +15,15 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# read API key
+# read Google Maps API key
 key_path = BASE_DIR / "src/api_key.txt"
 with open(key_path, 'r') as api_key_file:
     GOOGLE_MAPS_API_KEY = api_key_file.readline().strip()
 
-print(GOOGLE_MAPS_API_KEY)
+# read DeepSeek API key
+ai_key_path = BASE_DIR / "src/api-deepseek_key.txt"
+with open(ai_key_path, 'r') as ai_api_key_file:
+    DEEPSEEK_API_KEY = api_key_file.readline().strip()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -42,12 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    "corsheaders", # Enable CORS in Django
     'django.contrib.staticfiles',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # Enable CORS in Django
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -58,11 +59,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'src.urls'
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
 
 TEMPLATES = [
     {

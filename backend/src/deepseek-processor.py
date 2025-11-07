@@ -60,9 +60,28 @@ def ask_model(api_key: str, query: str) -> str | None:
 
                                                     "bakery,aquarium,museum,zoo,tourist_attraction,shopping_mall"
 
-                                                    # "Here is an example prompt and the corresponding tag results:\n"
+                                                    "Here is an example prompt and the corresponding tag results with an informational explanation behind "
+                                                    "the reasoning:\n"
 
-                                                    ""
+                                                    "Input: I am going for vacation and would like to have a roadtrip where I can visit all of the museums, "
+                                                    "shopping malls, and bakeries that are easily accessible on my route.\n"
+
+                                                    "Output: museum,shopping_mall,bakery,tourist_attraction\n"
+
+                                                    "Explanation: The user mentioned that they are going on vacation, so we included tourist_attraction as a "
+                                                    "tag. Additionally, they explicitly stated they wanted to visit museums, shopping malls, and bakeries, so "
+                                                    "those have all been added to the output."
+
+                                                    "Here is another example prompt with an informational explanation:\n"
+
+                                                    "Input: im not sure what is on the route but in general i would like to see anything interesting and "
+                                                    "fun for the family\n"
+
+                                                    "Output: amusement_park,aquarium,art_gallery,bowling_alley,movie_theater,museum,park,stadium,zoo,gym,spa,tourist_attraction\n"
+
+                                                    "Explanation: The user is not sure about what they want to visit fun points of interest that are family friendly. "
+                                                    "Because of this broad query, we included all entertainment results from the Google Places API except the non-family "
+                                                    "friendly locations, i.e. casino and night_club."
 
 
                                                     "It is EXTREMELY IMPORTANT that you do not deviate from this format, and nothing should "

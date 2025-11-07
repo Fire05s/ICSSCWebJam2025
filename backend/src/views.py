@@ -33,21 +33,21 @@ SERVICES = "Services"
 TRANSPORTATION = "Transportation"
 CULTURAL = "Cultural & Public Places"
 HEALTH = "Healthcare"
- 
+
 DEFAULT_COLOR = {'background': '#1b7a28', 'border': '#013d09', 'glyph': '#013d09'}
 
 #give the user an option to customize their search from the parameters:
 FILTER_COLORS = {
-    FOOD_AND_DRINK: {'background': '#FF6B6B', 'border': '#000000', 'glyph': '#570010'}, 
+    FOOD_AND_DRINK: {'background': "#FF8C8C", 'border': '#000000', 'glyph': '#570010'}, 
     LODGING: {'background': '#4ECDC4', 'border': '#000000', 'glyph': '#1b7a28'}, 
     ENTERTAINMENT: {'background': '#FFD93D', 'border': '#000000', 'glyph': '#858a00'}, 
     SHOPPING: {'background': '#6A4C93', 'border': '#000000', 'glyph': '#013d09'},
     SERVICES: {'background': '#95A5A6', 'border': '#000000', 'glyph': '#2C3E50'},
     TRANSPORTATION: {'background': '#3498DB', 'border': '#000000', 'glyph': '#2980B9'},
     CULTURAL: {'background': '#E67E22', 'border': '#000000', 'glyph': '#D35400'},
-    HEALTH: {'background': '#E74C3C', 'border': '#000000', 'glyph': '#C0392B'}
+    HEALTH: {'background': "#FF1900", 'border': '#000000', 'glyph': '#C0392B'}
 }
-            
+
 ALL_FILTER_OPTIONS = {
     # Food and Drink places
     'restaurant': FOOD_AND_DRINK,
@@ -155,7 +155,7 @@ ALL_FILTER_OPTIONS = {
     'veterinary_care': HEALTH,
     'medical_clinic': HEALTH
 }
- 
+
 # Initialize Google Maps client
 try:
     gmaps_client = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY)
