@@ -17,6 +17,7 @@ export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
 
     const [selectedCategories, setSelectedCategories] = useState([])
     const [deepseekInput, setCustomInput] = useState("")
+    const [searchRadius, setSearchRadius] = useState("")
     const [isUpdating, setIsUpdating] = useState(false)
     const [updateMessage, setUpdateMessage] = useState("")
 
@@ -35,9 +36,10 @@ export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
                 || 'http://127.0.0.1:8000'
             const endpoint = `${BACKEND_BASE.replace(/\/$/, '')}/api/preferences/`
             console.debug('POST preferences to', endpoint)
-                // Send categories and custom input as separate fields
+                // Send categories, custom input, and radius as separate fields
                 const payload = { categories: selectedCategories }
                 if (deepseekInput.trim()) payload.custom_input = deepseekInput.trim()
+                if (searchRadius) payload.radius = searchRadius
                 const resp = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -102,7 +104,20 @@ export default function Sidebar({ setSelectedPOI, onPreferencesUpdated }) {
                         </label>
                     ))}
                 </div>
-                <div style={{marginTop: '10px',  fontWeight: 600}}>(Optional) Describe the places you'd like to visit on your journey:</div>
+
+                <div style={{marginTop: '10px', fontWeight: 600}}>Search Radius (meters):</div>
+                <div style={{marginTop: '6px', marginBottom: '8px'}}>
+                    <input
+                        type="number"
+                        value={searchRadius}
+                        onChange={e => setSearchRadius(e.target.value)}
+                        placeholder="Default: 5000"
+                        min="100"
+                        style={{width: '90%', padding: '6px', fontSize: '1em'}}
+                    />
+                </div>
+
+                <div style={{marginTop: '10px',  fontWeight: 600}}>Describe the places you'd like to visit on your journey:</div>
                 <div style={{marginTop: '12px', marginBottom: '8px'}}>
                     <input
                         type="text"

@@ -163,6 +163,7 @@ ALL_FILTER_OPTIONS = {
 # module-level user filters (simple prototype storage)
 USER_FILTERS = []
 LAST_APPLIED_FILTERS = []
+SEARCH_RADIUS = SEARCH_RADIUS_METERS  # dynamic radius with default
 
 # Initialize Google Maps client
 try:
@@ -257,10 +258,28 @@ def set_user_preferences(request):
         payload = json.loads(request.body.decode('utf-8') or '{}')
         categories = payload.get('categories', [])
         deepseek_input = payload.get('custom_input', '')
+        search_radius = payload.get('radius', None)
+        
         if not isinstance(categories, list):
             return JsonResponse({'error': 'categories must be a list'}, status=400)
+            
+        # Handle search radius
+        global SEARCH_RADIUS
+        if search_radius:
+            try:
+                radius = int(search_radius)
+                if radius > 0:
+                    SEARCH_RADIUS = radius
+                else:
+                    SEARCH_RADIUS = SEARCH_RADIUS_METERS  # reset to default if invalid
+            except ValueError:
+                SEARCH_RADIUS = SEARCH_RADIUS_METERS  # reset to default if not a number
+        else:
+            SEARCH_RADIUS = SEARCH_RADIUS_METERS  # reset to default if empty
+
         print(categories)
         print(f"deepseek_input: {deepseek_input}")
+        print(f"search_radius: {SEARCH_RADIUS}")
 
         USER_FILTERS = []
         for place_type, category in ALL_FILTER_OPTIONS.items():
@@ -275,7 +294,13 @@ def set_user_preferences(request):
             USER_FILTERS = deepseekTags.split(',') + USER_FILTERS
         print(USER_FILTERS)
 
-        return JsonResponse({'status': 'ok', 'filters_count': len(USER_FILTERS), 'filters': USER_FILTERS, 'deepseek_input': deepseek_input})
+        return JsonResponse({
+            'status': 'ok',
+            'filters_count': len(USER_FILTERS),
+            'filters': USER_FILTERS,
+            'deepseek_input': deepseek_input,
+            'search_radius': SEARCH_RADIUS
+        })
     except Exception as e:
         logger.error(f"Failed to set preferences: {e}")
         return JsonResponse({'error': str(e)}, status=500)
@@ -340,7 +365,7 @@ def get_places_along_route(decoded_points: list) -> Dict[int, list]:
             for each_filter in applied_filters:
                 nearby = gmaps_client.places_nearby(
                     location=(point['lat'], point['lng']),
-                    radius=SEARCH_RADIUS_METERS,
+                    radius=SEARCH_RADIUS,  # Use dynamic radius
                     type=each_filter,
                 )
 
