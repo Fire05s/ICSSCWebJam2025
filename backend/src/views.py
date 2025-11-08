@@ -277,22 +277,22 @@ def set_user_preferences(request):
         else:
             SEARCH_RADIUS = SEARCH_RADIUS_METERS  # reset to default if empty
 
-        print(categories)
-        print(f"deepseek_input: {deepseek_input}")
-        print(f"search_radius: {SEARCH_RADIUS}")
+        # print(categories)
+        # print(f"deepseek_input: {deepseek_input}")
+        # print(f"search_radius: {SEARCH_RADIUS}")
 
         USER_FILTERS = []
         for place_type, category in ALL_FILTER_OPTIONS.items():
             if category in categories:
                 USER_FILTERS.append(place_type)
         random.shuffle(USER_FILTERS)
-        print(USER_FILTERS)
+        # print(USER_FILTERS)
 
         deepseekTags = ask_model(settings.DEEPSEEK_API_KEY, deepseek_input)
-        print(deepseekTags)
+        # print(deepseekTags)
         if deepseekTags: # not empty
             USER_FILTERS = deepseekTags.split(',') + USER_FILTERS
-        print(USER_FILTERS)
+        # print(USER_FILTERS)
 
         return JsonResponse({
             'status': 'ok',
@@ -403,7 +403,7 @@ def get_places_along_route(decoded_points: list, start_coords: Optional[Tuple[fl
     if len(filters_selected) > MAX_FILTERS_TO_QUERY:
         step_multiplier = 1 + (len(filters_selected) // MAX_FILTERS_TO_QUERY)
     effective_step = POLYLINE_STEP * step_multiplier
-    print(filters_selected)
+    # print(filters_selected)
 
     if not gmaps_client:
         return places
@@ -503,7 +503,7 @@ def get_places_along_route(decoded_points: list, start_coords: Optional[Tuple[fl
                             
                             # Append rating, user_ratings_total, photo_url, weather and travel_time to the place entry
                             places[dict_index] = [coords[0], coords[1], place['name'], place_color,
-                                                rating, user_ratings_total, photo_url, weather, website, travel_time]
+                                                rating, user_ratings_total, photo_url, weather, travel_time, website]
                             dict_index += 1
                             break
 
@@ -529,7 +529,7 @@ def index(request):
         return JsonResponse({"error": "Missing start or destination"}, status=400)
     
     # Debug print to verify it works
-    print(f"Received start: {start}, destination: {destination}")
+    # print(f"Received start: {start}, destination: {destination}")
 
     # Get route information
     route_data = get_route_data(start, destination)
